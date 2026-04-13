@@ -2,21 +2,25 @@ import AppKit
 import SwiftUI
 
 struct WindowObserver: NSViewRepresentable {
-    let frameDidChange: (CGRect) -> Void
+    let windowDidAttach: (NSWindow) -> Void
+    let frameDidChange: (NSWindow, CGRect) -> Void
 
     func makeNSView(context: Context) -> WindowObserverView {
         let view = WindowObserverView()
+        view.windowDidAttach = windowDidAttach
         view.frameDidChange = frameDidChange
         return view
     }
 
     func updateNSView(_ nsView: WindowObserverView, context: Context) {
+        nsView.windowDidAttach = windowDidAttach
         nsView.frameDidChange = frameDidChange
     }
 }
 
 final class WindowObserverView: NSView {
-    var frameDidChange: ((CGRect) -> Void)?
+    var windowDidAttach: ((NSWindow) -> Void)?
+    var frameDidChange: ((NSWindow, CGRect) -> Void)?
     private var observers: [NSObjectProtocol] = []
     private var hasEmittedInitialFrame = false
 
@@ -56,6 +60,8 @@ final class WindowObserverView: NSView {
             )
         }
 
+        windowDidAttach?(window)
+
         if hasEmittedInitialFrame == false {
             hasEmittedInitialFrame = true
             emitFrame()
@@ -67,6 +73,6 @@ final class WindowObserverView: NSView {
             return
         }
 
-        frameDidChange?(window.frame)
+        frameDidChange?(window, window.frame)
     }
 }

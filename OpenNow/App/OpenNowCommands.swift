@@ -8,7 +8,7 @@ struct OpenNowCommands: Commands {
         }
 
         CommandGroup(after: .newItem) {
-            Button("Open…", action: coordinator.openDocumentFromPanel)
+            Button("Open Markdown…", action: coordinator.openDocumentFromPanel)
                 .keyboardShortcut("o", modifiers: [.command])
 
             Divider()
@@ -35,6 +35,26 @@ struct OpenNowCommands: Commands {
         }
 
         CommandMenu("Reader") {
+            Button("Make Text Bigger") {
+                coordinator.increaseReaderFontScale()
+            }
+            .keyboardShortcut("+", modifiers: [.command])
+            .disabled(coordinator.activeDocument == nil)
+
+            Button("Make Text Smaller") {
+                coordinator.decreaseReaderFontScale()
+            }
+            .keyboardShortcut("-", modifiers: [.command])
+            .disabled(coordinator.activeDocument == nil)
+
+            Button("Actual Size") {
+                coordinator.resetReaderFontScale()
+            }
+            .keyboardShortcut("0", modifiers: [.command])
+            .disabled(coordinator.activeDocument == nil)
+
+            Divider()
+
             Button("Page Down") {
                 coordinator.page(.down)
             }

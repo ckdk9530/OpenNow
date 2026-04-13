@@ -9,7 +9,12 @@ final class PreferencesStore {
     private enum Key {
         static let recentFiles = "recentFiles"
         static let lastOpen = "lastOpen"
+        static let authorizedFolders = "authorizedFolders"
         static let windowFrame = "windowFrame"
+        static let sceneWindowFrame = "NSWindow Frame main"
+        static let readerFontScale = "readerFontScale"
+        static let splitViewFramePrefix = "NSSplitView Subview Frames "
+        static let splitViewFrameSuffix = "SidebarNavigationSplitView"
     }
 
     private let defaults: UserDefaults
@@ -72,6 +77,26 @@ final class PreferencesStore {
         persist(record, forKey: Key.lastOpen)
     }
 
+    func loadAuthorizedFolders() -> [AuthorizedFolderEntry] {
+        guard let data = defaults.data(forKey: Key.authorizedFolders) else {
+            return []
+        }
+
+        return (try? decoder.decode([AuthorizedFolderEntry].self, from: data)) ?? []
+    }
+
+    func saveAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
+        var entries = loadAuthorizedFolders()
+        entries.removeAll { $0.path == entry.path }
+        entries.insert(entry, at: 0)
+        persist(Array(entries.prefix(recentFilesLimit)), forKey: Key.authorizedFolders)
+    }
+
+    func removeAuthorizedFolder(path: String) {
+        let entries = loadAuthorizedFolders().filter { $0.path != path }
+        persist(entries, forKey: Key.authorizedFolders)
+    }
+
     func loadWindowFrame() -> CGRect? {
         guard let string = defaults.string(forKey: Key.windowFrame) else {
             return nil
@@ -82,6 +107,28 @@ final class PreferencesStore {
 
     func saveWindowFrame(_ frame: CGRect) {
         defaults.set(NSStringFromRect(frame), forKey: Key.windowFrame)
+    }
+
+    func clearWindowFrame() {
+        defaults.removeObject(forKey: Key.windowFrame)
+    }
+
+    func clearSystemWindowAutosaveArtifacts() {
+        defaults.removeObject(forKey: Key.sceneWindowFrame)
+
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix(Key.splitViewFramePrefix) && key.contains(Key.splitViewFrameSuffix) {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    func loadReaderFontScale() -> Double {
+        let storedValue = defaults.double(forKey: Key.readerFontScale)
+        return storedValue == 0 ? 1.0 : storedValue
+    }
+
+    func saveReaderFontScale(_ scale: Double) {
+        defaults.set(scale, forKey: Key.readerFontScale)
     }
 
     private func persist<T: Encodable>(_ value: T, forKey key: String) {

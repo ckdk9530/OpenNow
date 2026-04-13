@@ -201,13 +201,13 @@
 			);
 			mainGroup = DCDF61A22F8CA48500653A73;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DCDF61AC2F8CA48500653A73 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			packageReferences = (
-				A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */,
-			);
 			targets = (
 				DCDF61AA2F8CA48500653A73 /* OpenNow */,
 				DCDF61B92F8CA48500653A73 /* OpenNowTests */,
@@ -276,25 +276,6 @@
 			targetProxy = DCDF61C52F8CA48500653A73 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stackotter/Down-gfm.git";
-			requirement = {
-				kind = exactVersion;
-				version = 0.12.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A0B100032F8D000100000001 /* Down */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */;
-			productName = Down;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		DCDF61CC2F8CA48500653A73 /* Debug */ = {
@@ -428,6 +409,7 @@
 				DEVELOPMENT_TEAM = YKKL62BQ59;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				INFOPLIST_FILE = Config/Info.plist;
@@ -460,6 +442,7 @@
 				DEVELOPMENT_TEAM = YKKL62BQ59;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				INFOPLIST_FILE = Config/Info.plist;
@@ -601,6 +584,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stackotter/Down-gfm.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.12.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A0B100032F8D000100000001 /* Down */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A0B100022F8D000100000001 /* XCRemoteSwiftPackageReference "Down-gfm" */;
+			productName = Down;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DCDF61A32F8CA48500653A73 /* Project object */;
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 enum OutlineExtractor {
-    static func extract(from markdown: String) -> [OutlineItem] {
+    nonisolated static func extract(from markdown: String) -> [OutlineItem] {
         let lines = markdown.components(separatedBy: .newlines)
         var items: [OutlineItem] = []
         var counts: [String: Int] = [:]
@@ -44,7 +44,7 @@ enum OutlineExtractor {
         return items
     }
 
-    static func slugify(_ title: String) -> String {
+    nonisolated static func slugify(_ title: String) -> String {
         let lowered = title.lowercased()
         let normalized = lowered.unicodeScalars.map { scalar -> Character in
             if CharacterSet.alphanumerics.contains(scalar) {
@@ -66,7 +66,7 @@ enum OutlineExtractor {
         return collapsed.isEmpty ? "section" : collapsed
     }
 
-    private static func parseATXHeading(_ line: String) -> (title: String, level: Int)? {
+    nonisolated private static func parseATXHeading(_ line: String) -> (title: String, level: Int)? {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         let level = trimmed.prefix { $0 == "#" }.count
         guard (1...6).contains(level) else {
@@ -82,7 +82,7 @@ enum OutlineExtractor {
         return (title, level)
     }
 
-    private static func parseSetextHeading(titleLine: String, underlineLine: String) -> (title: String, level: Int)? {
+    nonisolated private static func parseSetextHeading(titleLine: String, underlineLine: String) -> (title: String, level: Int)? {
         let title = titleLine.trimmingCharacters(in: .whitespaces)
         let underline = underlineLine.trimmingCharacters(in: .whitespaces)
         guard title.isEmpty == false, underline.isEmpty == false else {
@@ -100,7 +100,7 @@ enum OutlineExtractor {
         return nil
     }
 
-    private static func uniqueAnchor(for title: String, counts: inout [String: Int]) -> String {
+    nonisolated private static func uniqueAnchor(for title: String, counts: inout [String: Int]) -> String {
         let slug = slugify(title)
         let currentCount = counts[slug, default: 0]
         counts[slug] = currentCount + 1

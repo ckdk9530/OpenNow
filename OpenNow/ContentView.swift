@@ -9,12 +9,13 @@ struct ContentView: View {
         } detail: {
             ReaderDetailView(coordinator: coordinator)
         }
-        .navigationSplitViewColumnWidth(min: 220, ideal: 260)
+        .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 300)
+        .navigationSplitViewStyle(.balanced)
         .accessibilityIdentifier("root-split-view")
         .toolbar {
             ToolbarItemGroup {
                 Button(action: coordinator.openDocumentFromPanel) {
-                    Label("Open", systemImage: "folder")
+                    Label("Open Markdown", systemImage: "doc")
                 }
 
                 if coordinator.isLoadingDocument {
@@ -23,7 +24,12 @@ struct ContentView: View {
                 }
             }
         }
-        .background(WindowObserver(frameDidChange: coordinator.updateWindowFrame))
+        .background(
+            WindowObserver(
+                windowDidAttach: coordinator.configureWindow,
+                frameDidChange: coordinator.updateWindowFrame(window:frame:)
+            )
+        )
     }
 }
 

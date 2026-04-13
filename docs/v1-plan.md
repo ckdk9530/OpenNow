@@ -6,6 +6,7 @@
 ## Goals
 - Open `.md`, `.markdown`, and compatible plain-text Markdown files.
 - Support Finder double-click open and `cmd+o`.
+- When `Open Markdown…` encounters relative assets, immediately request a durable bookmark for the document-tree root rather than a narrow child folder.
 - Show a left outline and a right reading surface.
 - Support headings, lists, blockquotes, tables, code blocks, images, and links.
 - Support dark mode.

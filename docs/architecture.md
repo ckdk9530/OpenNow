@@ -13,14 +13,15 @@
 
 ## Subsystems
 - `AppLaunchCoordinator`: startup, open flows, active document state, recents, reloads.
-- `DocumentAccessController`: open panel, bookmark creation, bookmark resolution, security scope lifecycle.
+- `DocumentAccessController`: file pickers, folder-tree authorization, bookmark creation, bookmark resolution, security scope lifecycle.
 - `MarkdownRenderer`: Markdown to HTML plus outline generation.
 - `ReaderWebBridge`: bridge between the coordinator and `WKWebView`.
 - `FileWatcher`: `DispatchSource` watcher for the active file only.
-- `PreferencesStore`: recent files, last-open record, and window frame persistence.
+- `PreferencesStore`: recent files, authorized folder roots, last-open record, and window frame persistence.
 
 ## Constraints
 - The app stays single-window in V1.
 - Persistence stays lightweight.
 - Startup work must stay lazy and document-driven.
+- Sandbox support should prefer durable folder-tree authorization over per-file repair flows.
 - If `WKWebView` creation becomes the startup bottleneck, make the reader surface lazy before adding heavier mitigation.

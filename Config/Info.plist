@@ -20,21 +20,20 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>Markdown Document</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.dahengchen.opennow.markdown</string>
-				<string>net.daringfireball.markdown</string>
-				<string>public.plain-text</string>
-			</array>
-		</dict>
-	</array>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>Markdown Document</string>
+				<key>CFBundleTypeRole</key>
+				<string>Viewer</string>
+				<key>LSHandlerRank</key>
+				<string>Default</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>com.dahengchen.opennow.markdown</string>
+					<string>net.daringfireball.markdown</string>
+				</array>
+			</dict>
+		</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

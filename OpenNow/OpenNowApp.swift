@@ -6,20 +6,29 @@ struct OpenNowApp: App {
     @State private var coordinator = AppLaunchCoordinator()
 
     var body: some Scene {
-        WindowGroup {
+        Window("OpenNow", id: "main") {
             ContentView(coordinator: coordinator)
                 .task {
+                    let pendingLaunchURLs = appDelegate.drainPendingURLs()
                     appDelegate.openHandler = { urls in
                         for url in urls {
                             coordinator.openDocument(at: url)
                         }
                     }
-                    appDelegate.flushPendingURLsIfNeeded()
-                    coordinator.start()
+                    coordinator.start(skipRestore: pendingLaunchURLs.isEmpty == false)
+
+                    for url in pendingLaunchURLs {
+                        coordinator.openLaunchDocument(at: url)
+                    }
                 }
         }
+        .defaultSize(width: 1040, height: 660)
         .commands {
             OpenNowCommands(coordinator: coordinator)
+        }
+
+        Settings {
+            SettingsView(coordinator: coordinator)
         }
     }
 }

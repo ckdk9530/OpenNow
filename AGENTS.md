@@ -22,7 +22,14 @@
 - Design as if the app will ship through the Mac App Store.
 - File access must work with sandboxed user-selected files.
 - Prefer security-scoped bookmarks for reopen flows and recent files.
-- Relative image support must account for parent-folder access, not just the file bookmark.
+- Relative image support must use folder-tree authorization, not one-off repair banners.
+- `Open Markdown…` is the primary path; when a document needs relative assets, the app should immediately request a durable bookmark for the inferred root folder (for example `Desktop` or a repo root), not for an arbitrary child directory.
+- Do not “solve” file access bugs by switching testing to non-sandbox mode and pretending the App Store constraint disappeared.
+
+## File Association
+- OpenNow should register cleanly as a Markdown viewer in Finder `Open With`.
+- It should be valid for users to set OpenNow as the default app for `.md` and `.markdown` files.
+- Do not broaden file associations to all plain-text files just to get more opens.
 
 ## Implementation Boundaries
 - Keep `ContentView` thin.

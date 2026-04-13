@@ -7,3 +7,9 @@ xcuserdata/
 # Derived data and build artifacts
 DerivedData/
 build/
+
+# Local audit and scratch artifacts
+.codex-hygiene/
+tmp/
+docs/render-fixtures/*.png
+docs/render-fixtures/*.log
