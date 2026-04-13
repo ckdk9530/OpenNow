@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observation
+import OSLog
 
 @MainActor
 @Observable
@@ -27,6 +28,7 @@ final class AppLaunchCoordinator {
     private let documentAccessController: DocumentAccessController
     private let markdownRenderer: MarkdownRenderer
     private let fileWatcher: FileWatcher
+    private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "Launch")
 
     let webBridge = ReaderWebBridge()
 
@@ -64,9 +66,9 @@ final class AppLaunchCoordinator {
         self.documentAccessController = documentAccessController
         self.markdownRenderer = markdownRenderer
         self.fileWatcher = fileWatcher
-        self.recentFiles = preferencesStore.loadRecentFiles()
-        self.authorizedFolders = preferencesStore.loadAuthorizedFolders()
-        self.readerFontScale = preferencesStore.loadReaderFontScale()
+        self.recentFiles = []
+        self.authorizedFolders = []
+        self.readerFontScale = 1.0
     }
 
     var sidebarOutlineItems: [OutlineItem] {
@@ -81,6 +83,7 @@ final class AppLaunchCoordinator {
         hasStarted = true
         recentFiles = preferencesStore.loadRecentFiles()
         authorizedFolders = preferencesStore.loadAuthorizedFolders()
+        readerFontScale = preferencesStore.loadReaderFontScale()
         preferencesStore.clearSystemWindowAutosaveArtifacts()
         restoreWindowFrameIfPossible()
         webBridge.setFontScale(readerFontScale)
@@ -98,8 +101,8 @@ final class AppLaunchCoordinator {
             return
         }
 
-        if skipRestore == false {
-            restoreLastDocumentIfNeeded()
+        if skipRestore {
+            return
         }
     }
 
@@ -120,10 +123,19 @@ final class AppLaunchCoordinator {
     }
 
     func openRecent(_ entry: RecentFileEntry) {
+        let latestRecentFiles = preferencesStore.loadRecentFiles()
+        recentFiles = latestRecentFiles
+        let latestAuthorizedFolders = preferencesStore.loadAuthorizedFolders()
+        authorizedFolders = latestAuthorizedFolders
+        let resolvedEntry = latestRecentFiles.first(where: { $0.path == entry.path }) ?? entry
+
+        logger.notice(
+            "openRecent file=\(resolvedEntry.path, privacy: .public) storedFileBookmark=\(resolvedEntry.fileBookmarkData != nil) storedDirBookmark=\(resolvedEntry.directoryBookmarkData != nil) accessRootPath=\(resolvedEntry.accessRootPath ?? "<none>", privacy: .public)"
+        )
         open(
             descriptor: documentAccessController.resolveRecentFile(
-                entry,
-                authorizedFolders: authorizedFolders
+                resolvedEntry,
+                authorizedFolders: latestAuthorizedFolders
             ),
             source: .recent,
             updateRecentFiles: true,
@@ -178,6 +190,21 @@ final class AppLaunchCoordinator {
         recentFiles = []
     }
 
+    func closeCurrentFile() {
+        cancelPendingLoad()
+        isLoadingDocument = false
+        loadErrorMessage = nil
+        selectedAnchor = nil
+        activeDocument = nil
+        currentDescriptor = nil
+        currentFileModificationDate = nil
+        fileWatcher.stop()
+        currentAccessSession?.stop()
+        currentAccessSession = nil
+        ReaderAssetSecurityScopeStore.shared.clear()
+        preferencesStore.saveLastOpen(nil)
+    }
+
     func addAuthorizedFolderFromPanel() {
         let suggestedDirectory = activeDocument?.directoryURL
             ?? authorizedFolders.first.map { URL(fileURLWithPath: $0.path, isDirectory: true) }
@@ -212,6 +239,7 @@ final class AppLaunchCoordinator {
     }
 
     private func openDocument(at url: URL, source: OpenRequestSource) {
+        logger.notice("openDocument source=\(String(describing: source), privacy: .public) file=\(url.path, privacy: .public)")
         if source.shouldPromptForFolderTreeAccess,
            documentAccessController.authorizedFolder(containing: url, authorizedFolders: authorizedFolders) == nil,
            documentAccessController.documentContainsRelativeImages(at: url),
@@ -233,6 +261,9 @@ final class AppLaunchCoordinator {
         updateRecentFiles: Bool,
         persistLastOpen: Bool
     ) {
+        logger.notice(
+            "open source=\(String(describing: source), privacy: .public) file=\(descriptor.fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) dirBookmark=\(descriptor.directoryBookmarkData != nil) accessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
+        )
         cancelPendingLoad()
         isLoadingDocument = true
         loadErrorMessage = nil
@@ -266,6 +297,9 @@ final class AppLaunchCoordinator {
                 if updateRecentFiles {
                     self.preferencesStore.saveRecentFile(descriptor.recentEntry)
                     self.recentFiles = self.preferencesStore.loadRecentFiles()
+                    self.logger.notice(
+                        "savedRecent file=\(descriptor.fileURL.path, privacy: .public) persistedFileBookmark=\(descriptor.recentEntry.fileBookmarkData != nil) persistedDirBookmark=\(descriptor.recentEntry.directoryBookmarkData != nil)"
+                    )
                 }
 
                 if persistLastOpen {
@@ -275,6 +309,14 @@ final class AppLaunchCoordinator {
                 self.attachFileWatcher(for: descriptor)
             } catch is CancellationError {
             } catch {
+                let message = Self.makeLoadErrorMessage(
+                    for: descriptor,
+                    source: source,
+                    error: error
+                )
+                self.logger.error(
+                    "openFailed source=\(String(describing: source), privacy: .public) file=\(descriptor.fileURL.path, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
+                )
                 self.isLoadingDocument = false
                 self.activeDocument = nil
                 self.currentDescriptor = nil
@@ -292,11 +334,8 @@ final class AppLaunchCoordinator {
                     return
                 }
 
-                self.loadErrorMessage = Self.makeLoadErrorMessage(
-                    for: descriptor,
-                    source: source,
-                    error: error
-                )
+                self.loadErrorMessage = nil
+                self.presentLoadFailureAlert(message: message, source: source)
             }
         }
     }
@@ -455,6 +494,27 @@ final class AppLaunchCoordinator {
         readerFontScale = clampedScale
         preferencesStore.saveReaderFontScale(clampedScale)
         webBridge.setFontScale(clampedScale)
+    }
+
+    private func presentLoadFailureAlert(message: String, source: OpenRequestSource) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Couldn’t Open Document"
+        alert.informativeText = message
+
+        if source == .recent || source == .reload || source == .restore {
+            alert.addButton(withTitle: "Open Markdown…")
+            alert.addButton(withTitle: "OK")
+
+            if alert.runModal() == .alertFirstButtonReturn {
+                openDocumentFromPanel()
+            }
+
+            return
+        }
+
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     nonisolated private static func makeLoadErrorMessage(

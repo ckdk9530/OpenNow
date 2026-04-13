@@ -33,7 +33,8 @@ struct ReaderDetailView: View {
                         recentFiles: coordinator.recentFiles,
                         authorizedFolders: coordinator.authorizedFolders,
                         openRecent: coordinator.openRecent(_:),
-                        openPanel: coordinator.openDocumentFromPanel
+                        openPanel: coordinator.openDocumentFromPanel,
+                        clearRecent: coordinator.clearRecentFiles
                     )
                 }
             }
@@ -121,6 +122,7 @@ private struct EmptyReaderView: View {
     let authorizedFolders: [AuthorizedFolderEntry]
     let openRecent: (RecentFileEntry) -> Void
     let openPanel: () -> Void
+    let clearRecent: () -> Void
 
     var body: some View {
         ReaderStateContainer(alignment: hasSupplementarySections ? .leading : .center) {
@@ -174,8 +176,17 @@ private struct EmptyReaderView: View {
 
                 if recentFiles.isEmpty == false {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Recent Files")
-                            .font(.headline)
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Recent Files")
+                                .font(.headline)
+
+                            Spacer(minLength: 12)
+
+                            Button("Clean", action: clearRecent)
+                                .buttonStyle(.link)
+                                .controlSize(.small)
+                                .accessibilityIdentifier("clear-recent-files-button")
+                        }
 
                         ForEach(recentFiles) { entry in
                             Button {

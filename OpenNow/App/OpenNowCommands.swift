@@ -11,6 +11,11 @@ struct OpenNowCommands: Commands {
             Button("Open Markdown…", action: coordinator.openDocumentFromPanel)
                 .keyboardShortcut("o", modifiers: [.command])
 
+            Button("Close File") {
+                coordinator.closeCurrentFile()
+            }
+            .disabled(coordinator.activeDocument == nil)
+
             Divider()
 
             if coordinator.recentFiles.isEmpty {

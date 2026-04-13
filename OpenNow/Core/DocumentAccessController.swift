@@ -1,8 +1,11 @@
 import AppKit
 import Foundation
+import OSLog
 import UniformTypeIdentifiers
 
 final class DocumentAccessController {
+    private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "DocumentAccess")
+
     func openPanelPickDocumentURL(startingDirectory: URL? = nil) -> URL? {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
@@ -15,7 +18,7 @@ final class DocumentAccessController {
             return nil
         }
 
-        return panel.url?.standardizedFileURL
+        return panel.url
     }
 
     func openPanelPickFolder(
@@ -31,7 +34,7 @@ final class DocumentAccessController {
         panel.message = message ?? "Choose a folder tree to authorize. OpenNow will reuse this access for Markdown files and relative assets inside that folder and its subfolders."
         panel.prompt = "Use Folder"
 
-        guard panel.runModal() == .OK, let folderURL = panel.url?.standardizedFileURL else {
+        guard panel.runModal() == .OK, let folderURL = panel.url else {
             return nil
         }
 
@@ -100,43 +103,62 @@ final class DocumentAccessController {
         for url: URL,
         authorizedFolders: [AuthorizedFolderEntry]
     ) -> DocumentAccessDescriptor {
-        let fileURL = url.standardizedFileURL
+        let sourceURL = url
+        let fileURL = sourceURL.standardizedFileURL
         let directoryURL = fileURL.deletingLastPathComponent()
         let accessRootEntry = authorizedFolder(containing: fileURL, authorizedFolders: authorizedFolders)
 
-        return DocumentAccessDescriptor(
+        let descriptor = DocumentAccessDescriptor(
             fileURL: fileURL,
             directoryURL: directoryURL,
-            fileBookmarkData: makeBookmark(for: fileURL),
+            fileBookmarkData: makeBookmark(for: sourceURL),
             accessRootURL: resolveAuthorizedFolderURL(accessRootEntry),
             directoryBookmarkData: accessRootEntry?.bookmarkData
         )
+
+        logger.notice(
+            "prepareAccess file=\(fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) accessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public) dirBookmark=\(descriptor.directoryBookmarkData != nil)"
+        )
+
+        return descriptor
     }
 
     func resolveRecentFile(
         _ entry: RecentFileEntry,
         authorizedFolders: [AuthorizedFolderEntry]
     ) -> DocumentAccessDescriptor {
-        resolve(
+        let descriptor = resolve(
             path: entry.path,
             fileBookmarkData: entry.fileBookmarkData,
             directoryBookmarkData: entry.directoryBookmarkData,
             accessRootPath: entry.accessRootPath,
             authorizedFolders: authorizedFolders
         )
+
+        logger.notice(
+            "resolveRecent file=\(entry.path, privacy: .public) storedFileBookmark=\(entry.fileBookmarkData != nil) storedDirBookmark=\(entry.directoryBookmarkData != nil) resolvedAccessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
+        )
+
+        return descriptor
     }
 
     func resolveLastOpen(
         _ record: LastOpenRecord,
         authorizedFolders: [AuthorizedFolderEntry]
     ) -> DocumentAccessDescriptor {
-        resolve(
+        let descriptor = resolve(
             path: record.path,
             fileBookmarkData: record.fileBookmarkData,
             directoryBookmarkData: record.directoryBookmarkData,
             accessRootPath: record.accessRootPath,
             authorizedFolders: authorizedFolders
         )
+
+        logger.notice(
+            "resolveLastOpen file=\(record.path, privacy: .public) storedFileBookmark=\(record.fileBookmarkData != nil) storedDirBookmark=\(record.directoryBookmarkData != nil) resolvedAccessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
+        )
+
+        return descriptor
     }
 
     func authorizedFolder(
@@ -161,17 +183,25 @@ final class DocumentAccessController {
     }
 
     func makeAuthorizedFolderEntry(for url: URL) -> AuthorizedFolderEntry {
-        let folderURL = url.standardizedFileURL
+        let sourceURL = url
+        let folderURL = sourceURL.standardizedFileURL
         return AuthorizedFolderEntry(
             path: folderURL.path,
             displayName: folderURL.lastPathComponent,
-            bookmarkData: makeBookmark(for: folderURL),
+            bookmarkData: makeBookmark(for: sourceURL),
             lastUsedAt: .now
         )
     }
 
     func makeBookmark(for url: URL) -> Data? {
-        try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+        let data = try? url.bookmarkData(
+            options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+
+        logger.notice("makeBookmark url=\(url.path, privacy: .public) success=\(data != nil)")
+        return data
     }
 
     func resolveBookmark(_ bookmarkData: Data) -> URL? {
@@ -192,6 +222,9 @@ final class DocumentAccessController {
 
         let session = DocumentAccessSession(accessRootURL: accessRootURL, fileURL: fileURL)
         session.start()
+        logger.notice(
+            "startAccess file=\(fileURL.path, privacy: .public) accessRoot=\(accessRootURL.path, privacy: .public) accessRootGranted=\(session.accessRootGranted) fileGranted=\(session.fileAccessGranted)"
+        )
         return session
     }
 
