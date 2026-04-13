@@ -108,7 +108,7 @@ final class DonationStore {
             productsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
 
             if products.isEmpty {
-                banner = .info("No support purchase products are configured for this build yet. Connect these product IDs in App Store Connect or attach a StoreKit configuration for local testing.")
+                banner = .info("Support purchases aren't available right now.")
             }
         } catch {
             banner = .error("OpenNow couldn't load support purchase products right now. \(error.localizedDescription)")
@@ -134,7 +134,7 @@ final class DonationStore {
         }
 
         guard let product = productsByID[tier.productID] else {
-            banner = .info("This support purchase tier isn't configured yet for the current build. Add \(tier.productID) in App Store Connect or a local StoreKit file before testing purchases.")
+            banner = .info("This support purchase isn't available right now.")
             return
         }
 

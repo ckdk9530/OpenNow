@@ -31,11 +31,6 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("Support Amount")
-            } footer: {
-                Text("Support purchases use standard App Store in-app purchases. Amounts are fixed and do not unlock features.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .formStyle(.grouped)

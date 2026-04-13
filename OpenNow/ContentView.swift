@@ -10,8 +10,9 @@ struct ContentView: View {
             ReaderDetailView(coordinator: coordinator)
         }
         .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 300)
-        .navigationSplitViewStyle(.balanced)
+        .navigationSplitViewStyle(.prominentDetail)
         .accessibilityIdentifier("root-split-view")
+        .background(Color(nsColor: .windowBackgroundColor))
         .toolbar {
             ToolbarItemGroup {
                 Button(action: coordinator.openDocumentFromPanel) {

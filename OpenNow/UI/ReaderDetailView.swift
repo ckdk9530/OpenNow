@@ -4,7 +4,7 @@ struct ReaderDetailView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        ZStack {
+        ReaderSurfaceCard {
             Group {
                 if let document = coordinator.activeDocument {
                     VStack(spacing: 0) {
@@ -45,6 +45,40 @@ struct ReaderDetailView: View {
     }
 }
 
+private struct ReaderSurfaceCard<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
+
+        ZStack {
+            shape
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .shadow(
+                    color: .black.opacity(colorScheme == .dark ? 0.22 : 0.08),
+                    radius: colorScheme == .dark ? 18 : 14,
+                    x: 0,
+                    y: 10
+                )
+
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(shape)
+        }
+        .overlay {
+            shape
+                .strokeBorder(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 1)
+        }
+        .clipShape(shape)
+        .padding(.top, 10)
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.bottom, 12)
+    }
+}
+
 private struct DocumentHeaderView: View {
     let fileName: String
     let parentPath: String
@@ -66,7 +100,7 @@ private struct DocumentHeaderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(.regularMaterial)
+        .background(Color(nsColor: .controlBackgroundColor))
         .accessibilityIdentifier("document-header")
     }
 }
@@ -139,12 +173,6 @@ private struct EmptyReaderView: View {
                         .multilineTextAlignment(hasSupplementarySections ? .leading : .center)
                         .accessibilityIdentifier("empty-reader-title")
 
-                    Text("OpenNow is optimized for a fast launch, a native shell, and a clean reading surface.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(hasSupplementarySections ? .leading : .center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("empty-reader-message")
                 }
 
                 Button(action: openPanel) {

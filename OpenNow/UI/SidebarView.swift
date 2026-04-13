@@ -21,9 +21,11 @@ struct SidebarView: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
             }
         }
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 300, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.clear)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidebar-pane")
         .safeAreaInset(edge: .bottom, spacing: 0) {
