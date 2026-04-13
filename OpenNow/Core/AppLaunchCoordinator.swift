@@ -121,7 +121,10 @@ final class AppLaunchCoordinator {
 
     func openRecent(_ entry: RecentFileEntry) {
         open(
-            descriptor: documentAccessController.resolveRecentFile(entry),
+            descriptor: documentAccessController.resolveRecentFile(
+                entry,
+                authorizedFolders: authorizedFolders
+            ),
             source: .recent,
             updateRecentFiles: true,
             persistLastOpen: true
@@ -134,7 +137,10 @@ final class AppLaunchCoordinator {
         }
 
         open(
-            descriptor: documentAccessController.resolveLastOpen(record),
+            descriptor: documentAccessController.resolveLastOpen(
+                record,
+                authorizedFolders: authorizedFolders
+            ),
             source: .restore,
             updateRecentFiles: false,
             persistLastOpen: false
@@ -286,7 +292,11 @@ final class AppLaunchCoordinator {
                     return
                 }
 
-                self.loadErrorMessage = "Failed to open \(descriptor.fileURL.lastPathComponent): \(error.localizedDescription)"
+                self.loadErrorMessage = Self.makeLoadErrorMessage(
+                    for: descriptor,
+                    source: source,
+                    error: error
+                )
             }
         }
     }
@@ -445,6 +455,21 @@ final class AppLaunchCoordinator {
         readerFontScale = clampedScale
         preferencesStore.saveReaderFontScale(clampedScale)
         webBridge.setFontScale(clampedScale)
+    }
+
+    nonisolated private static func makeLoadErrorMessage(
+        for descriptor: DocumentAccessDescriptor,
+        source: OpenRequestSource,
+        error: any Error
+    ) -> String {
+        let nsError = error as NSError
+        let isPermissionFailure = nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileReadNoPermissionError
+
+        if isPermissionFailure, source == .recent || source == .reload || source == .restore {
+            return "OpenNow no longer has permission to reopen \(descriptor.fileURL.lastPathComponent) from history. Open it once with Open Markdown… to refresh access."
+        }
+
+        return "Failed to open \(descriptor.fileURL.lastPathComponent): \(error.localizedDescription)"
     }
 
 }

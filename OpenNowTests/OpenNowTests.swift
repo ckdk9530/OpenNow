@@ -227,6 +227,51 @@ struct OpenNowTests {
         #expect(rootURL.path == "/Volumes/Archive")
     }
 
+    @Test func resolveRecentFileFallsBackToCurrentAuthorizedFolder() {
+        let controller = DocumentAccessController()
+        let entry = RecentFileEntry(
+            path: "/Users/example/Project/OpenNow/README.md",
+            displayName: "README.md",
+            fileBookmarkData: nil,
+            directoryBookmarkData: nil,
+            accessRootPath: nil,
+            lastOpenedAt: .distantPast
+        )
+        let authorizedFolder = AuthorizedFolderEntry(
+            path: "/Users/example/Project",
+            displayName: "Project",
+            bookmarkData: nil,
+            lastUsedAt: .distantPast
+        )
+
+        let descriptor = controller.resolveRecentFile(entry, authorizedFolders: [authorizedFolder])
+
+        #expect(descriptor.fileURL.path == entry.path)
+        #expect(descriptor.accessRootURL?.path == authorizedFolder.path)
+    }
+
+    @Test func resolveLastOpenFallsBackToCurrentAuthorizedFolder() {
+        let controller = DocumentAccessController()
+        let record = LastOpenRecord(
+            path: "/Users/example/Project/OpenNow/docs/guide.md",
+            displayName: "guide.md",
+            fileBookmarkData: nil,
+            directoryBookmarkData: nil,
+            accessRootPath: nil
+        )
+        let authorizedFolder = AuthorizedFolderEntry(
+            path: "/Users/example/Project",
+            displayName: "Project",
+            bookmarkData: nil,
+            lastUsedAt: .distantPast
+        )
+
+        let descriptor = controller.resolveLastOpen(record, authorizedFolders: [authorizedFolder])
+
+        #expect(descriptor.fileURL.path == record.path)
+        #expect(descriptor.accessRootURL?.path == authorizedFolder.path)
+    }
+
     @Test func runtimeEnvironmentIgnoresOpenNowHooksOutsideXCTest() {
         let environment = [
             "OPENNOW_DEFAULTS_SUITE": "OpenNowManual",

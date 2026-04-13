@@ -113,21 +113,29 @@ final class DocumentAccessController {
         )
     }
 
-    func resolveRecentFile(_ entry: RecentFileEntry) -> DocumentAccessDescriptor {
+    func resolveRecentFile(
+        _ entry: RecentFileEntry,
+        authorizedFolders: [AuthorizedFolderEntry]
+    ) -> DocumentAccessDescriptor {
         resolve(
             path: entry.path,
             fileBookmarkData: entry.fileBookmarkData,
             directoryBookmarkData: entry.directoryBookmarkData,
-            accessRootPath: entry.accessRootPath
+            accessRootPath: entry.accessRootPath,
+            authorizedFolders: authorizedFolders
         )
     }
 
-    func resolveLastOpen(_ record: LastOpenRecord) -> DocumentAccessDescriptor {
+    func resolveLastOpen(
+        _ record: LastOpenRecord,
+        authorizedFolders: [AuthorizedFolderEntry]
+    ) -> DocumentAccessDescriptor {
         resolve(
             path: record.path,
             fileBookmarkData: record.fileBookmarkData,
             directoryBookmarkData: record.directoryBookmarkData,
-            accessRootPath: record.accessRootPath
+            accessRootPath: record.accessRootPath,
+            authorizedFolders: authorizedFolders
         )
     }
 
@@ -229,11 +237,14 @@ final class DocumentAccessController {
         path: String,
         fileBookmarkData: Data?,
         directoryBookmarkData: Data?,
-        accessRootPath: String?
+        accessRootPath: String?,
+        authorizedFolders: [AuthorizedFolderEntry]
     ) -> DocumentAccessDescriptor {
         let fileURL = resolveBookmarkIfPossible(fileBookmarkData) ?? URL(fileURLWithPath: path)
         let directoryURL = fileURL.deletingLastPathComponent()
-        let accessRootURL = resolveBookmarkIfPossible(directoryBookmarkData)
+        let accessRootEntry = authorizedFolder(containing: fileURL, authorizedFolders: authorizedFolders)
+        let accessRootURL = resolveAuthorizedFolderURL(accessRootEntry)
+            ?? resolveBookmarkIfPossible(directoryBookmarkData)
             ?? accessRootPath.map { URL(fileURLWithPath: $0, isDirectory: true).standardizedFileURL }
 
         return DocumentAccessDescriptor(
@@ -241,7 +252,7 @@ final class DocumentAccessController {
             directoryURL: directoryURL,
             fileBookmarkData: fileBookmarkData,
             accessRootURL: accessRootURL,
-            directoryBookmarkData: directoryBookmarkData
+            directoryBookmarkData: accessRootEntry?.bookmarkData ?? directoryBookmarkData
         )
     }
 
