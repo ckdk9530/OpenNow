@@ -6,14 +6,6 @@ final class OpenNowUITests: XCTestCase {
         static let testFile = "OPENNOW_TEST_FILE"
     }
 
-    private struct StoredLastOpenRecord: Codable {
-        let path: String
-        let displayName: String
-        let fileBookmarkData: Data?
-        let directoryBookmarkData: Data?
-        let accessRootPath: String?
-    }
-
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
@@ -68,17 +60,18 @@ final class OpenNowUITests: XCTestCase {
     }
 
     @MainActor
-    func testStaleRestoredDocumentFallsBackToEmptyState() throws {
+    func testStoredLastOpenIsIgnoredAtLaunch() throws {
         let suiteName = "OpenNowUITests-Restore-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
-        let record = StoredLastOpenRecord(
-            path: "/tmp/OpenNow-Missing-\(UUID().uuidString).md",
-            displayName: "Missing.md",
-            fileBookmarkData: nil,
-            directoryBookmarkData: nil,
-            accessRootPath: nil
+        defaults.set(
+            try JSONSerialization.data(
+                withJSONObject: [
+                    "path": "/tmp/OpenNow-Missing-\(UUID().uuidString).md",
+                    "displayName": "Missing.md"
+                ]
+            ),
+            forKey: "lastOpen"
         )
-        defaults.set(try JSONEncoder().encode(record), forKey: "lastOpen")
 
         let app = XCUIApplication()
         app.launchEnvironment[LaunchEnvironmentKey.defaultsSuite] = suiteName

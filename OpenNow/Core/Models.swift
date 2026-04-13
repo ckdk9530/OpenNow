@@ -49,14 +49,6 @@ struct RecentFileEntry: Identifiable, Codable, Equatable {
     var id: String { path }
 }
 
-struct LastOpenRecord: Codable, Equatable {
-    let path: String
-    let displayName: String
-    let fileBookmarkData: Data?
-    let directoryBookmarkData: Data?
-    let accessRootPath: String?
-}
-
 struct DocumentAccessDescriptor {
     let fileURL: URL
     let directoryURL: URL
@@ -72,16 +64,6 @@ struct DocumentAccessDescriptor {
             directoryBookmarkData: directoryBookmarkData,
             accessRootPath: accessRootURL?.path,
             lastOpenedAt: .now
-        )
-    }
-
-    var lastOpenRecord: LastOpenRecord {
-        LastOpenRecord(
-            path: fileURL.path,
-            displayName: fileURL.lastPathComponent,
-            fileBookmarkData: fileBookmarkData,
-            directoryBookmarkData: directoryBookmarkData,
-            accessRootPath: accessRootURL?.path
         )
     }
 }

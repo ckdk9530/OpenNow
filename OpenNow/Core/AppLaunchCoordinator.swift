@@ -12,13 +12,12 @@ final class AppLaunchCoordinator {
         case external
         case recent
         case reload
-        case restore
 
         var shouldPromptForFolderTreeAccess: Bool {
             switch self {
             case .launch, .panel, .external:
                 true
-            case .recent, .reload, .restore:
+            case .recent, .reload:
                 false
             }
         }
@@ -75,7 +74,7 @@ final class AppLaunchCoordinator {
         (activeDocument?.outlineItems ?? []).filter { $0.level <= 3 }
     }
 
-    func start(skipRestore: Bool = false) {
+    func start() {
         guard hasStarted == false else {
             return
         }
@@ -95,17 +94,10 @@ final class AppLaunchCoordinator {
                     authorizedFolders: authorizedFolders
                 ),
                 source: .external,
-                updateRecentFiles: false,
-                persistLastOpen: false
+                updateRecentFiles: false
             )
             return
         }
-
-        if skipRestore {
-            return
-        }
-
-        restoreLastDocumentIfNeeded()
     }
 
     func openDocumentFromPanel() {
@@ -140,24 +132,7 @@ final class AppLaunchCoordinator {
                 authorizedFolders: latestAuthorizedFolders
             ),
             source: .recent,
-            updateRecentFiles: true,
-            persistLastOpen: true
-        )
-    }
-
-    func restoreLastDocumentIfNeeded() {
-        guard let record = preferencesStore.loadLastOpen() else {
-            return
-        }
-
-        open(
-            descriptor: documentAccessController.resolveLastOpen(
-                record,
-                authorizedFolders: authorizedFolders
-            ),
-            source: .restore,
-            updateRecentFiles: false,
-            persistLastOpen: false
+            updateRecentFiles: true
         )
     }
 
@@ -204,7 +179,6 @@ final class AppLaunchCoordinator {
         currentAccessSession?.stop()
         currentAccessSession = nil
         ReaderAssetSecurityScopeStore.shared.clear()
-        preferencesStore.saveLastOpen(nil)
     }
 
     func addAuthorizedFolderFromPanel() {
@@ -253,16 +227,14 @@ final class AppLaunchCoordinator {
         open(
             descriptor: documentAccessController.prepareAccess(for: url, authorizedFolders: authorizedFolders),
             source: source,
-            updateRecentFiles: true,
-            persistLastOpen: true
+            updateRecentFiles: true
         )
     }
 
     private func open(
         descriptor: DocumentAccessDescriptor,
         source: OpenRequestSource,
-        updateRecentFiles: Bool,
-        persistLastOpen: Bool
+        updateRecentFiles: Bool
     ) {
         logger.notice(
             "open source=\(String(describing: source), privacy: .public) file=\(descriptor.fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) dirBookmark=\(descriptor.directoryBookmarkData != nil) accessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
@@ -305,10 +277,6 @@ final class AppLaunchCoordinator {
                     )
                 }
 
-                if persistLastOpen {
-                    self.preferencesStore.saveLastOpen(descriptor.lastOpenRecord)
-                }
-
                 self.attachFileWatcher(for: descriptor)
             } catch is CancellationError {
             } catch {
@@ -329,10 +297,7 @@ final class AppLaunchCoordinator {
                 self.currentAccessSession = nil
                 ReaderAssetSecurityScopeStore.shared.clear()
 
-                if source == .restore || source == .launch {
-                    if source == .restore {
-                        self.preferencesStore.saveLastOpen(nil)
-                    }
+                if source == .launch {
                     self.loadErrorMessage = nil
                     return
                 }
@@ -391,8 +356,7 @@ final class AppLaunchCoordinator {
         open(
             descriptor: descriptor,
             source: .reload,
-            updateRecentFiles: false,
-            persistLastOpen: false
+            updateRecentFiles: false
         )
     }
 
@@ -505,7 +469,7 @@ final class AppLaunchCoordinator {
         alert.messageText = "Couldn’t Open Document"
         alert.informativeText = message
 
-        if source == .recent || source == .reload || source == .restore {
+        if source == .recent || source == .reload {
             alert.addButton(withTitle: "Open Markdown…")
             alert.addButton(withTitle: "OK")
 
@@ -528,7 +492,7 @@ final class AppLaunchCoordinator {
         let nsError = error as NSError
         let isPermissionFailure = nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileReadNoPermissionError
 
-        if isPermissionFailure, source == .recent || source == .reload || source == .restore {
+        if isPermissionFailure, source == .recent || source == .reload {
             return "OpenNow no longer has permission to reopen \(descriptor.fileURL.lastPathComponent) from history. Open it once with Open Markdown… to refresh access."
         }
 

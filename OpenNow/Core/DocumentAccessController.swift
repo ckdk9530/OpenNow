@@ -142,25 +142,6 @@ final class DocumentAccessController {
         return descriptor
     }
 
-    func resolveLastOpen(
-        _ record: LastOpenRecord,
-        authorizedFolders: [AuthorizedFolderEntry]
-    ) -> DocumentAccessDescriptor {
-        let descriptor = resolve(
-            path: record.path,
-            fileBookmarkData: record.fileBookmarkData,
-            directoryBookmarkData: record.directoryBookmarkData,
-            accessRootPath: record.accessRootPath,
-            authorizedFolders: authorizedFolders
-        )
-
-        logger.notice(
-            "resolveLastOpen file=\(record.path, privacy: .public) storedFileBookmark=\(record.fileBookmarkData != nil) storedDirBookmark=\(record.directoryBookmarkData != nil) resolvedAccessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
-        )
-
-        return descriptor
-    }
-
     func authorizedFolder(
         containing fileURL: URL,
         authorizedFolders: [AuthorizedFolderEntry]

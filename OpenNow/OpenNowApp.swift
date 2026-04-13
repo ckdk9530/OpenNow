@@ -16,7 +16,7 @@ struct OpenNowApp: App {
                             coordinator.openDocument(at: url)
                         }
                     }
-                    coordinator.start(skipRestore: pendingLaunchURLs.isEmpty == false)
+                    coordinator.start()
 
                     for url in pendingLaunchURLs {
                         coordinator.openLaunchDocument(at: url)

@@ -124,7 +124,6 @@ enum RuntimeEnvironment {
 final class PreferencesStore {
     private enum Key {
         static let recentFiles = "recentFiles"
-        static let lastOpen = "lastOpen"
         static let authorizedFolders = "authorizedFolders"
         static let windowFrame = "windowFrame"
         static let sceneWindowFrame = "NSWindow Frame main"
@@ -174,23 +173,6 @@ final class PreferencesStore {
 
     func clearRecentFiles() {
         defaults.removeObject(forKey: Key.recentFiles)
-    }
-
-    func loadLastOpen() -> LastOpenRecord? {
-        guard let data = defaults.data(forKey: Key.lastOpen) else {
-            return nil
-        }
-
-        return try? decoder.decode(LastOpenRecord.self, from: data)
-    }
-
-    func saveLastOpen(_ record: LastOpenRecord?) {
-        guard let record else {
-            defaults.removeObject(forKey: Key.lastOpen)
-            return
-        }
-
-        persist(record, forKey: Key.lastOpen)
     }
 
     func loadAuthorizedFolders() -> [AuthorizedFolderEntry] {
