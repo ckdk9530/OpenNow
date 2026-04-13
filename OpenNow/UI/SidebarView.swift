@@ -4,28 +4,33 @@ struct SidebarView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        ZStack {
+        VStack(spacing: 0) {
             if coordinator.sidebarOutlineItems.isEmpty {
                 SidebarEmptyStateView()
             } else {
-                List {
-                    ForEach(coordinator.sidebarOutlineItems) { item in
-                        Button {
-                            coordinator.jump(to: item)
-                        } label: {
-                            OutlineRow(item: item)
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(coordinator.sidebarOutlineItems) { item in
+                            Button {
+                                coordinator.jump(to: item)
+                            } label: {
+                                OutlineRow(item: item)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("outline-item-\(item.anchor)")
+                            .accessibilityLabel(item.title)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("outline-item-\(item.anchor)")
-                        .accessibilityLabel(item.title)
                     }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 14)
+                    .padding(.bottom, 18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         .frame(minWidth: 220, idealWidth: 260, maxWidth: 300, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.clear)
+        .background(Color(nsColor: .windowBackgroundColor))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidebar-pane")
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -47,9 +52,14 @@ private struct OutlineRow: View {
             Text(item.title)
                 .font(item.level == 1 ? .headline : .body)
                 .lineLimit(2)
+                .multilineTextAlignment(.leading)
                 .padding(.leading, CGFloat(max(0, item.level - 1) * 8))
+
+            Spacer(minLength: 0)
         }
-        .contentShape(Rectangle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -104,8 +114,11 @@ private struct SidebarFooterView: View {
             Spacer()
         }
         .padding(.horizontal, 14)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
-        .background(.clear)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .overlay(alignment: .top) {
+            Divider()
+        }
     }
 }

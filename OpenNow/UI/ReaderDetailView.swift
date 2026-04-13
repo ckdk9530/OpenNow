@@ -4,78 +4,43 @@ struct ReaderDetailView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        ReaderSurfaceCard {
-            Group {
-                if let document = coordinator.activeDocument {
-                    VStack(spacing: 0) {
-                        DocumentHeaderView(
-                            fileName: document.url.lastPathComponent,
-                            parentPath: document.directoryURL.path
-                        )
-
-                        Divider()
-
-                        ReaderWebView(
-                            html: document.renderedHTML,
-                            documentURL: document.url,
-                            baseURL: document.directoryURL,
-                            bridge: coordinator.webBridge
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .layoutPriority(1)
-                    }
-                } else if coordinator.isLoadingDocument {
-                    LoadingDocumentView()
-                } else if let loadErrorMessage = coordinator.loadErrorMessage {
-                    DocumentErrorView(message: loadErrorMessage)
-                } else {
-                    EmptyReaderView(
-                        recentFiles: coordinator.recentFiles,
-                        authorizedFolders: coordinator.authorizedFolders,
-                        openRecent: coordinator.openRecent(_:),
-                        openPanel: coordinator.openDocumentFromPanel,
-                        clearRecent: coordinator.clearRecentFiles
+        Group {
+            if let document = coordinator.activeDocument {
+                VStack(spacing: 0) {
+                    DocumentHeaderView(
+                        fileName: document.url.lastPathComponent,
+                        parentPath: document.directoryURL.path
                     )
+
+                    Divider()
+
+                    ReaderWebView(
+                        html: document.renderedHTML,
+                        documentURL: document.url,
+                        baseURL: document.directoryURL,
+                        bridge: coordinator.webBridge
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .layoutPriority(1)
                 }
+            } else if coordinator.isLoadingDocument {
+                LoadingDocumentView()
+            } else if let loadErrorMessage = coordinator.loadErrorMessage {
+                DocumentErrorView(message: loadErrorMessage)
+            } else {
+                EmptyReaderView(
+                    recentFiles: coordinator.recentFiles,
+                    authorizedFolders: coordinator.authorizedFolders,
+                    openRecent: coordinator.openRecent(_:),
+                    openPanel: coordinator.openDocumentFromPanel,
+                    clearRecent: coordinator.clearRecentFiles
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .controlBackgroundColor))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("reader-detail-pane")
-    }
-}
-
-private struct ReaderSurfaceCard<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
-
-        ZStack {
-            shape
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .shadow(
-                    color: .black.opacity(colorScheme == .dark ? 0.22 : 0.08),
-                    radius: colorScheme == .dark ? 18 : 14,
-                    x: 0,
-                    y: 10
-                )
-
-            content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(shape)
-        }
-        .overlay {
-            shape
-                .strokeBorder(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 1)
-        }
-        .clipShape(shape)
-        .padding(.top, 10)
-        .padding(.leading, 8)
-        .padding(.trailing, 12)
-        .padding(.bottom, 12)
     }
 }
 
