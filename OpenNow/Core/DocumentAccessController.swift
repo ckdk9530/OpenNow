@@ -187,34 +187,6 @@ final class DocumentAccessController {
         return session
     }
 
-    nonisolated func detectFullDiskAccessStatus() -> FullDiskAccessStatus {
-        let fileManager = FileManager.default
-
-        for candidateURL in fullDiskAccessProbeDirectories() {
-            var isDirectory: ObjCBool = false
-            guard fileManager.fileExists(atPath: candidateURL.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue
-            else {
-                continue
-            }
-
-            do {
-                _ = try fileManager.contentsOfDirectory(
-                    at: candidateURL,
-                    includingPropertiesForKeys: nil,
-                    options: [.skipsHiddenFiles]
-                )
-                return .likelyEnabled
-            } catch {
-                if isPermissionDenied(error) {
-                    return .notDetected
-                }
-            }
-        }
-
-        return .indeterminate
-    }
-
     func documentContainsRelativeImages(at fileURL: URL) -> Bool {
         guard let markdown = try? String(contentsOf: fileURL, encoding: .utf8) else {
             return false
@@ -288,52 +260,6 @@ final class DocumentAccessController {
 
         return resolveBookmarkIfPossible(entry.bookmarkData)
             ?? URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
-    }
-
-    nonisolated private func fullDiskAccessProbeDirectories() -> [URL] {
-        guard let homeDirectoryURL = realUserHomeDirectory() else {
-            return []
-        }
-
-        return [
-            "Library/Mail",
-            "Library/Messages",
-            "Library/Safari",
-            "Library/Application Support/AddressBook",
-            "Library/Calendars"
-        ].map {
-            homeDirectoryURL.appendingPathComponent($0, isDirectory: true)
-        }
-    }
-
-    nonisolated private func realUserHomeDirectory() -> URL? {
-        let username = NSUserName()
-        guard username.isEmpty == false else {
-            return nil
-        }
-
-        return URL(fileURLWithPath: "/Users/\(username)", isDirectory: true)
-    }
-
-    nonisolated private func isPermissionDenied(_ error: Error) -> Bool {
-        let nsError = error as NSError
-
-        if nsError.domain == NSCocoaErrorDomain,
-           nsError.code == NSFileReadNoPermissionError {
-            return true
-        }
-
-        if nsError.domain == NSPOSIXErrorDomain,
-           let code = POSIXErrorCode(rawValue: Int32(nsError.code)),
-           code == .EACCES || code == .EPERM {
-            return true
-        }
-
-        if let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
-            return isPermissionDenied(underlyingError)
-        }
-
-        return false
     }
 
     private func contains(_ descendantURL: URL, within ancestorURL: URL) -> Bool {

@@ -29,7 +29,7 @@ struct OpenNowApp: App {
         }
 
         Settings {
-            SettingsView(coordinator: coordinator)
+            SettingsView()
         }
     }
 }

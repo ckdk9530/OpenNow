@@ -36,17 +36,14 @@ final class AppLaunchCoordinator {
     var recentFiles: [RecentFileEntry]
     var authorizedFolders: [AuthorizedFolderEntry]
     var selectedAnchor: String?
-    var fullDiskAccessStatus: FullDiskAccessStatus = .indeterminate
     private(set) var readerFontScale: Double
 
     private var currentDescriptor: DocumentAccessDescriptor?
     private var currentAccessSession: DocumentAccessSession?
     private var currentFileModificationDate: Date?
     private var loadTask: Task<Void, Never>?
-    private var fullDiskAccessStatusTask: Task<Void, Never>?
     private var hasStarted = false
     private var hasRestoredWindowFrame = false
-    private var hasResolvedFullDiskAccessStatus = false
 
     convenience init() {
         self.init(
@@ -194,56 +191,6 @@ final class AppLaunchCoordinator {
     func removeAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
         preferencesStore.removeAuthorizedFolder(path: entry.path)
         authorizedFolders = preferencesStore.loadAuthorizedFolders()
-    }
-
-    func refreshFullDiskAccessStatusIfNeeded() {
-        guard hasResolvedFullDiskAccessStatus == false else {
-            return
-        }
-
-        refreshFullDiskAccessStatus()
-    }
-
-    func refreshFullDiskAccessStatus() {
-        fullDiskAccessStatusTask?.cancel()
-        let documentAccessController = self.documentAccessController
-
-        fullDiskAccessStatusTask = Task { [weak self] in
-            let status = await Task.detached(priority: .utility) {
-                documentAccessController.detectFullDiskAccessStatus()
-            }.value
-
-            guard let self, Task.isCancelled == false else {
-                return
-            }
-
-            self.fullDiskAccessStatus = status
-            self.hasResolvedFullDiskAccessStatus = true
-        }
-    }
-
-    func openFullDiskAccessSettings() {
-        let deepLinks = [
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
-        ]
-
-        for value in deepLinks {
-            guard let url = URL(string: value) else {
-                continue
-            }
-
-            if NSWorkspace.shared.open(url) {
-                return
-            }
-        }
-
-        openSystemSettings()
-    }
-
-    func openSystemSettings() {
-        let systemSettingsURL = URL(fileURLWithPath: "/System/Applications/System Settings.app")
-        NSWorkspace.shared.open(systemSettingsURL)
     }
 
     func configureWindow(_ window: NSWindow) {

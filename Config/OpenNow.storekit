@@ -1,0 +1,65 @@
+{
+  "identifier" : "OpenNowTips",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.00",
+      "familyShareable" : false,
+      "internalID" : "TIP00001",
+      "localizations" : [
+        {
+          "description" : "A light thank-you for OpenNow.",
+          "displayName" : "Small Tip",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dahengchen.OpenNow.tip.1",
+      "referenceName" : "Small Tip",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "6.00",
+      "familyShareable" : false,
+      "internalID" : "TIP00006",
+      "localizations" : [
+        {
+          "description" : "The default thank-you for regular readers.",
+          "displayName" : "Coffee Tip",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dahengchen.OpenNow.tip.6",
+      "referenceName" : "Coffee Tip",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "9.00",
+      "familyShareable" : false,
+      "internalID" : "TIP00009",
+      "localizations" : [
+        {
+          "description" : "A stronger show of support for the project.",
+          "displayName" : "Generous Tip",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.dahengchen.OpenNow.tip.9",
+      "referenceName" : "Generous Tip",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA"
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

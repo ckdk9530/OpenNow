@@ -5,12 +5,6 @@ enum ReaderPageDirection {
     case down
 }
 
-enum FullDiskAccessStatus: Equatable {
-    case likelyEnabled
-    case notDetected
-    case indeterminate
-}
-
 struct OutlineItem: Identifiable, Codable, Equatable {
     let title: String
     let level: Int
