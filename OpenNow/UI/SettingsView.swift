@@ -4,13 +4,8 @@ struct SettingsView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        TabView {
-            AccessSettingsView(coordinator: coordinator)
-                .tabItem {
-                    Label("Access", systemImage: "folder.badge.gearshape")
-                }
-        }
-        .frame(minWidth: 620, minHeight: 440)
+        AccessSettingsView(coordinator: coordinator)
+            .frame(minWidth: 620, minHeight: 440)
     }
 }
 
@@ -18,133 +13,78 @@ private struct AccessSettingsView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Access")
-                    .font(.title2.weight(.semibold))
+        Form {
+            Section {
+                LabeledContent("Status") {
+                    Label(fullDiskAccessTitle, systemImage: fullDiskAccessIconName)
+                        .foregroundStyle(fullDiskAccessTint)
+                }
 
-                Text("OpenNow is designed to work with folder-based access. Full Disk Access is optional and managed by macOS.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                LabeledContent(primaryFullDiskAccessActionTitle) {
+                    Button(primaryFullDiskAccessButtonTitle) {
+                        coordinator.openFullDiskAccessSettings()
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                LabeledContent("Check Again") {
+                    Button("Refresh") {
+                        coordinator.refreshFullDiskAccessStatus()
+                    }
+                    .buttonStyle(.link)
+                }
+            } header: {
+                Text("Full Disk Access")
+            } footer: {
+                Text("\(fullDiskAccessMessage) Status detection is best-effort only. Folder-tree bookmarks remain the primary access path.")
             }
 
-            GroupBox {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: fullDiskAccessIconName)
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(fullDiskAccessTint)
-                            .frame(width: 26)
+            Section {
+                LabeledContent("Authorized Roots") {
+                    Text(folderCountLabel)
+                        .foregroundStyle(.secondary)
+                }
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(fullDiskAccessTitle)
-                                .font(.headline)
-
-                            Text(fullDiskAccessMessage)
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                HStack {
+                    Button("Add Folder Access…") {
+                        coordinator.addAuthorizedFolderFromPanel()
                     }
+                    .buttonStyle(.bordered)
 
-                    HStack(spacing: 10) {
-                        Button("Open Full Disk Access") {
-                            coordinator.openFullDiskAccessSettings()
-                        }
-                        .buttonStyle(.bordered)
+                    Spacer()
+                }
+            } header: {
+                Text("Authorized Folder Roots")
+            } footer: {
+                Text("OpenNow works best when you grant access at the folder level. Removing an authorized root stops OpenNow from reusing that bookmark in future opens, although the current document may keep working until you close or reload it.")
+            }
 
-                        Button("Refresh Status") {
-                            coordinator.refreshFullDiskAccessStatus()
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Open System Settings") {
-                            coordinator.openSystemSettings()
-                        }
-                        .buttonStyle(.bordered)
-
-                        Spacer()
-                    }
-
-                    Text("Status detection is best-effort only. OpenNow still treats folder-tree bookmarks as the primary access path, and Full Disk Access remains an advanced macOS-level override.")
-                        .font(.caption)
+            if coordinator.authorizedFolders.isEmpty {
+                Section {
+                    Text("No authorized folder roots. Add a folder such as Desktop, Documents, or a notes workspace to reuse access across that tree.")
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } label: {
-                Text("Full Disk Access")
-            }
-
-            HStack(spacing: 10) {
-                Button("Add Folder Access…") {
-                    coordinator.addAuthorizedFolderFromPanel()
-                }
-                .buttonStyle(.borderedProminent)
-
-                Spacer()
-            }
-
-            GroupBox {
-                if coordinator.authorizedFolders.isEmpty {
-                    ContentUnavailableView(
-                        "No Authorized Folder Roots",
-                        systemImage: "folder",
-                        description: Text("Add a folder root such as Desktop, Documents, or a notes workspace to reuse access across that tree.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 220)
-                } else {
-                    List {
-                        ForEach(coordinator.authorizedFolders) { entry in
-                            HStack(alignment: .firstTextBaseline, spacing: 14) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(entry.displayName)
-                                        .font(.headline)
-                                    Text(entry.path)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .textSelection(.enabled)
-                                }
-
-                                Spacer()
-
-                                Text(entry.lastUsedAt, style: .date)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                Button("Remove Access") {
-                                    coordinator.removeAuthorizedFolder(entry)
-                                }
-                                .buttonStyle(.borderless)
-                                .foregroundStyle(.red)
-                            }
-                            .padding(.vertical, 4)
+            } else {
+                Section {
+                    ForEach(coordinator.authorizedFolders) { entry in
+                        AuthorizedFolderRow(entry: entry) {
+                            coordinator.removeAuthorizedFolder(entry)
                         }
                     }
-                    .listStyle(.inset)
-                    .frame(minHeight: 260)
-                }
-            } label: {
-                HStack {
-                    Text("Authorized Folder Roots")
-                    Spacer()
-                    Text("\(coordinator.authorizedFolders.count)")
-                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Authorized Folders")
                 }
             }
-
-            Text("Removing an authorized root stops OpenNow from reusing that bookmark in future opens. The currently open document may keep working until you close or reload it.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
         }
-        .padding(24)
+        .formStyle(.grouped)
         .task {
             coordinator.refreshFullDiskAccessStatusIfNeeded()
         }
+    }
+
+    private var folderCountLabel: String {
+        "\(coordinator.authorizedFolders.count)"
     }
 
     private var fullDiskAccessTitle: String {
@@ -189,6 +129,64 @@ private struct AccessSettingsView: View {
         case .indeterminate:
             .secondary
         }
+    }
+
+    private var primaryFullDiskAccessActionTitle: String {
+        switch coordinator.fullDiskAccessStatus {
+        case .likelyEnabled:
+            "Manage"
+        case .notDetected, .indeterminate:
+            "Action"
+        }
+    }
+
+    private var primaryFullDiskAccessButtonTitle: String {
+        switch coordinator.fullDiskAccessStatus {
+        case .likelyEnabled:
+            "Open in System Settings…"
+        case .notDetected, .indeterminate:
+            "Open Full Disk Access…"
+        }
+    }
+}
+
+private struct AuthorizedFolderRow: View {
+    let entry: AuthorizedFolderEntry
+    let remove: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "folder")
+                .foregroundStyle(.secondary)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.displayName)
+                    .font(.body.weight(.medium))
+
+                Text(entry.path)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Last used \(entry.lastUsedAt.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            Button(role: .destructive) {
+                remove()
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("Remove Access")
+            .accessibilityLabel("Remove access for \(entry.displayName)")
+        }
+        .padding(.vertical, 4)
     }
 }
 

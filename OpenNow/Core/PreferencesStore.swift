@@ -2,14 +2,40 @@ import AppKit
 import Foundation
 
 enum RuntimeEnvironment {
-    private enum Key {
-        static let xctestConfiguration = "XCTestConfigurationFilePath"
-        static let defaultsSuite = "OPENNOW_DEFAULTS_SUITE"
-        static let testFile = "OPENNOW_TEST_FILE"
+    nonisolated private static var xctestConfigurationKey: String { "XCTestConfigurationFilePath" }
+    nonisolated private static var defaultsSuiteKey: String { "OPENNOW_DEFAULTS_SUITE" }
+    nonisolated private static var testFileKey: String { "OPENNOW_TEST_FILE" }
+    nonisolated private static var xcInjectBundleKey: String { "XCInjectBundle" }
+    nonisolated private static var xcInjectBundleIntoKey: String { "XCInjectBundleInto" }
+    nonisolated private static var dyldInsertLibrariesKey: String { "DYLD_INSERT_LIBRARIES" }
+    nonisolated private static var osActivityModeKey: String { "OS_ACTIVITY_DT_MODE" }
+
+    struct LaunchDiagnostics: Equatable {
+        let timestamp: String
+        let processIdentifier: Int32
+        let isRunningUnderXCTest: Bool
+        let defaultsSuite: String?
+        let testFilePath: String?
+        let relevantEnvironment: [String: String]
+    }
+
+    nonisolated private static let relevantEnvironmentKeys = [
+        xctestConfigurationKey,
+        defaultsSuiteKey,
+        testFileKey,
+        xcInjectBundleKey,
+        xcInjectBundleIntoKey,
+        dyldInsertLibrariesKey,
+        osActivityModeKey
+    ]
+
+    nonisolated static var launchDiagnosticsURL: URL {
+        URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("OpenNow-launch-diagnostics.json")
     }
 
     nonisolated static func isRunningUnderXCTest(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
-        guard let value = environment[Key.xctestConfiguration] else {
+        guard let value = environment[xctestConfigurationKey] else {
             return false
         }
 
@@ -21,7 +47,7 @@ enum RuntimeEnvironment {
             return nil
         }
 
-        guard let suiteName = environment[Key.defaultsSuite], suiteName.isEmpty == false else {
+        guard let suiteName = environment[defaultsSuiteKey], suiteName.isEmpty == false else {
             return nil
         }
 
@@ -33,11 +59,65 @@ enum RuntimeEnvironment {
             return nil
         }
 
-        guard let path = environment[Key.testFile], path.isEmpty == false else {
+        guard let path = environment[testFileKey], path.isEmpty == false else {
             return nil
         }
 
         return URL(fileURLWithPath: path)
+    }
+
+    nonisolated static func makeLaunchDiagnostics(
+        _ environment: [String: String] = ProcessInfo.processInfo.environment,
+        date: Date = Date(),
+        processIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
+    ) -> LaunchDiagnostics {
+        let relevantEnvironment = relevantEnvironmentKeys.reduce(into: [String: String]()) { partialResult, key in
+            guard let value = environment[key], value.isEmpty == false else {
+                return
+            }
+
+            partialResult[key] = value
+        }
+
+        return LaunchDiagnostics(
+            timestamp: ISO8601DateFormatter().string(from: date),
+            processIdentifier: processIdentifier,
+            isRunningUnderXCTest: isRunningUnderXCTest(environment),
+            defaultsSuite: defaultsSuiteName(environment),
+            testFilePath: launchTestFileURL(environment)?.path,
+            relevantEnvironment: relevantEnvironment
+        )
+    }
+
+    nonisolated static func writeLaunchDiagnostics(
+        _ environment: [String: String] = ProcessInfo.processInfo.environment,
+        date: Date = Date(),
+        processIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
+    ) {
+#if DEBUG
+        let diagnostics = makeLaunchDiagnostics(
+            environment,
+            date: date,
+            processIdentifier: processIdentifier
+        )
+
+        var payload: [String: Any] = [
+            "timestamp": diagnostics.timestamp,
+            "processIdentifier": diagnostics.processIdentifier,
+            "isRunningUnderXCTest": diagnostics.isRunningUnderXCTest,
+            "relevantEnvironment": diagnostics.relevantEnvironment
+        ]
+
+        payload["defaultsSuite"] = diagnostics.defaultsSuite
+        payload["testFilePath"] = diagnostics.testFilePath
+
+        guard JSONSerialization.isValidJSONObject(payload),
+              let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else {
+            return
+        }
+
+        try? data.write(to: launchDiagnosticsURL, options: .atomic)
+#endif
     }
 }
 

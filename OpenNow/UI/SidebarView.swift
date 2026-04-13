@@ -86,22 +86,24 @@ private struct SidebarEmptyStateView: View {
 
 private struct SidebarFooterView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-
-            HStack {
-                SettingsLink {
-                    Label("Settings", systemImage: "gearshape")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("sidebar-settings-button")
-
-                Spacer()
+        HStack {
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.bar)
+            .buttonStyle(.plain)
+            .help("Settings")
+            .accessibilityLabel("Settings")
+            .accessibilityIdentifier("sidebar-settings-button")
+
+            Spacer()
         }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .background(.clear)
     }
 }

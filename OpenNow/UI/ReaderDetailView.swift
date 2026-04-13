@@ -123,9 +123,9 @@ private struct EmptyReaderView: View {
     let openPanel: () -> Void
 
     var body: some View {
-        ReaderStateContainer(alignment: .leading) {
-            VStack(alignment: .leading, spacing: 22) {
-                VStack(alignment: .leading, spacing: 12) {
+        ReaderStateContainer(alignment: hasSupplementarySections ? .leading : .center) {
+            VStack(alignment: hasSupplementarySections ? .leading : .center, spacing: 22) {
+                VStack(alignment: hasSupplementarySections ? .leading : .center, spacing: 12) {
                     Image(systemName: "doc.richtext")
                         .font(.system(size: 30, weight: .medium))
                         .foregroundStyle(.secondary)
@@ -134,11 +134,13 @@ private struct EmptyReaderView: View {
                         .font(.system(.title2, design: .rounded).weight(.semibold))
                         .lineLimit(3)
                         .minimumScaleFactor(0.85)
+                        .multilineTextAlignment(hasSupplementarySections ? .leading : .center)
                         .accessibilityIdentifier("empty-reader-title")
 
                     Text("OpenNow is optimized for a fast launch, a native shell, and a clean reading surface.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(hasSupplementarySections ? .leading : .center)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("empty-reader-message")
                 }
@@ -197,6 +199,10 @@ private struct EmptyReaderView: View {
             }
         }
         .accessibilityIdentifier("empty-reader-state")
+    }
+
+    private var hasSupplementarySections: Bool {
+        authorizedFolders.isEmpty == false || recentFiles.isEmpty == false
     }
 }
 

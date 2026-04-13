@@ -9,6 +9,7 @@ struct OpenNowApp: App {
         Window("OpenNow", id: "main") {
             ContentView(coordinator: coordinator)
                 .task {
+                    RuntimeEnvironment.writeLaunchDiagnostics()
                     let pendingLaunchURLs = appDelegate.drainPendingURLs()
                     appDelegate.openHandler = { urls in
                         for url in urls {

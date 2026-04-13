@@ -249,4 +249,29 @@ struct OpenNowTests {
         #expect(RuntimeEnvironment.defaultsSuiteName(environment) == "OpenNowUITests")
         #expect(RuntimeEnvironment.launchTestFileURL(environment)?.path == "/tmp/fixture.md")
     }
+
+    @Test func runtimeEnvironmentDiagnosticsCaptureOnlyRelevantTestSignals() {
+        let environment = [
+            "XCTestConfigurationFilePath": "/tmp/session.xctestconfiguration",
+            "OPENNOW_DEFAULTS_SUITE": "OpenNowUITests",
+            "OPENNOW_TEST_FILE": "/tmp/fixture.md",
+            "XCInjectBundleInto": "/Applications/OpenNow.app/Contents/MacOS/OpenNow",
+            "UNRELATED": "ignore-me"
+        ]
+
+        let diagnostics = RuntimeEnvironment.makeLaunchDiagnostics(
+            environment,
+            date: Date(timeIntervalSince1970: 0),
+            processIdentifier: 42
+        )
+
+        #expect(diagnostics.timestamp == "1970-01-01T00:00:00Z")
+        #expect(diagnostics.processIdentifier == 42)
+        #expect(diagnostics.isRunningUnderXCTest)
+        #expect(diagnostics.defaultsSuite == "OpenNowUITests")
+        #expect(diagnostics.testFilePath == "/tmp/fixture.md")
+        #expect(diagnostics.relevantEnvironment["XCTestConfigurationFilePath"] == "/tmp/session.xctestconfiguration")
+        #expect(diagnostics.relevantEnvironment["XCInjectBundleInto"] == "/Applications/OpenNow.app/Contents/MacOS/OpenNow")
+        #expect(diagnostics.relevantEnvironment["UNRELATED"] == nil)
+    }
 }
