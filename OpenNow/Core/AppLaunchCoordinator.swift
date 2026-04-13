@@ -104,6 +104,8 @@ final class AppLaunchCoordinator {
         if skipRestore {
             return
         }
+
+        restoreLastDocumentIfNeeded()
     }
 
     func openDocumentFromPanel() {
@@ -240,7 +242,8 @@ final class AppLaunchCoordinator {
 
     private func openDocument(at url: URL, source: OpenRequestSource) {
         logger.notice("openDocument source=\(String(describing: source), privacy: .public) file=\(url.path, privacy: .public)")
-        if source.shouldPromptForFolderTreeAccess,
+        if RuntimeEnvironment.isRunningUnderXCTest() == false,
+           source.shouldPromptForFolderTreeAccess,
            documentAccessController.authorizedFolder(containing: url, authorizedFolders: authorizedFolders) == nil,
            documentAccessController.documentContainsRelativeImages(at: url),
            let folder = promptForFolderTreeAccess(for: url) {
@@ -517,7 +520,7 @@ final class AppLaunchCoordinator {
         alert.runModal()
     }
 
-    nonisolated private static func makeLoadErrorMessage(
+    private static func makeLoadErrorMessage(
         for descriptor: DocumentAccessDescriptor,
         source: OpenRequestSource,
         error: any Error

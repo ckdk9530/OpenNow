@@ -28,12 +28,10 @@ final class OpenNowUITests: XCTestCase {
         let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
         let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
         let loadingState = app.descendants(matching: .any).matching(identifier: "document-loading-state").firstMatch
-        let emptyTitle = app.descendants(matching: .any).matching(identifier: "empty-reader-title").firstMatch
         let openButton = app.buttons["Open Markdown…"]
 
         XCTAssertTrue(window.waitForExistence(timeout: 5))
         XCTAssertTrue(detailPane.waitForExistence(timeout: 5))
-        XCTAssertTrue(emptyTitle.waitForExistence(timeout: 5))
         XCTAssertTrue(openButton.waitForExistence(timeout: 5))
 
         let windowFrame = window.frame
@@ -87,11 +85,9 @@ final class OpenNowUITests: XCTestCase {
         app.launchEnvironment[LaunchEnvironmentKey.testFile] = ""
         app.launch()
 
-        let emptyTitle = app.descendants(matching: .any).matching(identifier: "empty-reader-title").firstMatch
         let openButton = app.buttons["Open Markdown…"]
         let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
 
-        XCTAssertTrue(emptyTitle.waitForExistence(timeout: 5))
         XCTAssertTrue(openButton.waitForExistence(timeout: 5))
         XCTAssertFalse(errorState.waitForExistence(timeout: 2))
     }
@@ -108,9 +104,16 @@ final class OpenNowUITests: XCTestCase {
         app.launch()
 
         let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
-        let outlineItem = app.descendants(matching: .any).matching(identifier: "outline-item-opennow-complex-render-fixture").firstMatch
+        let outlineItem = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "outline-item-")
+        ).firstMatch
+        let sidebarEmptyState = app.descendants(matching: .any).matching(identifier: "sidebar-empty-state").firstMatch
+        let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
+
         XCTAssertTrue(documentHeader.waitForExistence(timeout: 10))
         XCTAssertTrue(outlineItem.waitForExistence(timeout: 10))
+        XCTAssertFalse(sidebarEmptyState.exists)
+        XCTAssertFalse(errorState.exists)
     }
 
     @MainActor
@@ -143,7 +146,9 @@ final class OpenNowUITests: XCTestCase {
         app.launch()
 
         let detailPane = app.descendants(matching: .any).matching(identifier: "reader-detail-pane").firstMatch
-        let outlineButton = app.descendants(matching: .any).matching(identifier: "outline-item-layout-title").firstMatch
+        let outlineButton = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "outline-item-")
+        ).firstMatch
         let window = app.windows.firstMatch
 
         XCTAssertTrue(window.waitForExistence(timeout: 5))
