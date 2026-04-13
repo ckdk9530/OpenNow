@@ -35,5 +35,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("sidebar-pane")
     }
 }

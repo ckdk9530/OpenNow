@@ -12,6 +12,7 @@ struct ReaderWebView: NSViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.setValue(false, forKey: "drawsBackground")
+        webView.setAccessibilityIdentifier("reader-web-view")
         bridge.attach(webView)
         return webView
     }

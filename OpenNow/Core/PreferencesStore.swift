@@ -2,6 +2,10 @@ import AppKit
 import Foundation
 
 final class PreferencesStore {
+    private enum EnvironmentKey {
+        static let defaultsSuite = "OPENNOW_DEFAULTS_SUITE"
+    }
+
     private enum Key {
         static let recentFiles = "recentFiles"
         static let lastOpen = "lastOpen"
@@ -13,8 +17,23 @@ final class PreferencesStore {
     private let decoder = JSONDecoder()
     private let recentFilesLimit = 10
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    convenience init(defaults: UserDefaults) {
+        self.init(defaults: Optional(defaults))
+    }
+
+    init(defaults: UserDefaults? = nil) {
+        if let defaults {
+            self.defaults = defaults
+            return
+        }
+
+        if let suiteName = ProcessInfo.processInfo.environment[EnvironmentKey.defaultsSuite],
+           let suiteDefaults = UserDefaults(suiteName: suiteName) {
+            self.defaults = suiteDefaults
+            return
+        }
+
+        self.defaults = .standard
     }
 
     func loadRecentFiles() -> [RecentFileEntry] {

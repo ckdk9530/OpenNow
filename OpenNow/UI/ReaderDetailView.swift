@@ -4,45 +4,50 @@ struct ReaderDetailView: View {
     @Bindable var coordinator: AppLaunchCoordinator
 
     var body: some View {
-        Group {
-            if let document = coordinator.activeDocument {
-                VStack(spacing: 0) {
-                    DocumentHeaderView(
-                        fileName: document.url.lastPathComponent,
-                        parentPath: document.directoryURL.path
-                    )
+        ZStack {
+            Group {
+                if let document = coordinator.activeDocument {
+                    VStack(spacing: 0) {
+                        DocumentHeaderView(
+                            fileName: document.url.lastPathComponent,
+                            parentPath: document.directoryURL.path
+                        )
 
-                    Divider()
+                        Divider()
 
-                    ReaderWebView(
-                        html: document.renderedHTML,
-                        baseURL: document.directoryURL,
-                        bridge: coordinator.webBridge
-                    )
-                }
-                .overlay(alignment: .top) {
-                    if let noticeMessage = coordinator.noticeMessage {
-                        NoticeBanner(message: noticeMessage)
-                            .padding(.top, 12)
+                        ReaderWebView(
+                            html: document.renderedHTML,
+                            baseURL: document.directoryURL,
+                            bridge: coordinator.webBridge
+                        )
                     }
+                    .overlay(alignment: .top) {
+                        if let noticeMessage = coordinator.noticeMessage {
+                            NoticeBanner(message: noticeMessage)
+                                .padding(.top, 12)
+                        }
+                    }
+                } else if coordinator.isLoadingDocument {
+                    LoadingDocumentView()
+                } else if let loadErrorMessage = coordinator.loadErrorMessage {
+                    ContentUnavailableView(
+                        "Couldn’t Open Document",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(loadErrorMessage)
+                    )
+                    .accessibilityIdentifier("document-error-state")
+                } else {
+                    EmptyReaderView(
+                        recentFiles: coordinator.recentFiles,
+                        openRecent: coordinator.openRecent(_:),
+                        openPanel: coordinator.openDocumentFromPanel
+                    )
                 }
-            } else if coordinator.isLoadingDocument {
-                LoadingDocumentView()
-            } else if let loadErrorMessage = coordinator.loadErrorMessage {
-                ContentUnavailableView(
-                    "Couldn’t Open Document",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(loadErrorMessage)
-                )
-                .accessibilityIdentifier("document-error-state")
-            } else {
-                EmptyReaderView(
-                    recentFiles: coordinator.recentFiles,
-                    openRecent: coordinator.openRecent(_:),
-                    openPanel: coordinator.openDocumentFromPanel
-                )
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("reader-detail-pane")
     }
 }
 
@@ -55,6 +60,7 @@ private struct DocumentHeaderView: View {
             Text(fileName)
                 .font(.headline)
                 .accessibilityIdentifier("document-name-label")
+                .accessibilityLabel("document-header-title")
             Text(parentPath)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -64,6 +70,7 @@ private struct DocumentHeaderView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
         .background(.regularMaterial)
+        .accessibilityIdentifier("document-header")
     }
 }
 
@@ -140,5 +147,6 @@ private struct EmptyReaderView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier("empty-reader-state")
     }
 }
