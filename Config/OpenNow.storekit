@@ -5,48 +5,48 @@
   ],
   "products" : [
     {
-      "displayPrice" : "1.00",
+      "displayPrice" : "0.99",
       "familyShareable" : false,
       "internalID" : "TIP00001",
       "localizations" : [
         {
-          "description" : "A light thank-you for OpenNow.",
-          "displayName" : "Small Tip",
+          "description" : "One-time support purchase for OpenNow. No features are unlocked.",
+          "displayName" : "Small",
           "locale" : "en_US"
         }
       ],
       "productID" : "com.dahengchen.OpenNow.tip.1",
-      "referenceName" : "Small Tip",
+      "referenceName" : "OpenNow Support Small",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "6.00",
+      "displayPrice" : "1.99",
       "familyShareable" : false,
       "internalID" : "TIP00006",
       "localizations" : [
         {
-          "description" : "The default thank-you for regular readers.",
-          "displayName" : "Coffee Tip",
+          "description" : "One-time support purchase for OpenNow. No features are unlocked.",
+          "displayName" : "Standard",
           "locale" : "en_US"
         }
       ],
       "productID" : "com.dahengchen.OpenNow.tip.6",
-      "referenceName" : "Coffee Tip",
+      "referenceName" : "OpenNow Support Standard",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "9.00",
+      "displayPrice" : "2.99",
       "familyShareable" : false,
       "internalID" : "TIP00009",
       "localizations" : [
         {
-          "description" : "A stronger show of support for the project.",
-          "displayName" : "Generous Tip",
+          "description" : "One-time support purchase for OpenNow. No features are unlocked.",
+          "displayName" : "Generous",
           "locale" : "en_US"
         }
       ],
       "productID" : "com.dahengchen.OpenNow.tip.9",
-      "referenceName" : "Generous Tip",
+      "referenceName" : "OpenNow Support Generous",
       "type" : "Consumable"
     }
   ],

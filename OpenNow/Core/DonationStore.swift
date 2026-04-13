@@ -44,23 +44,23 @@ final class DonationStore {
         DonationTier(
             id: "tip-1",
             productID: "com.dahengchen.OpenNow.tip.1",
-            fallbackAmount: 1,
-            title: "Small Tip",
-            caption: "A light thank-you."
+            fallbackAmount: 0.99,
+            title: "Small",
+            caption: "Entry amount."
         ),
         DonationTier(
             id: "tip-6",
             productID: "com.dahengchen.OpenNow.tip.6",
-            fallbackAmount: 6,
-            title: "Coffee Tip",
-            caption: "A balanced default amount."
+            fallbackAmount: 1.99,
+            title: "Standard",
+            caption: "Default amount."
         ),
         DonationTier(
             id: "tip-9",
             productID: "com.dahengchen.OpenNow.tip.9",
-            fallbackAmount: 9,
-            title: "Generous Tip",
-            caption: "A stronger show of support."
+            fallbackAmount: 2.99,
+            title: "Generous",
+            caption: "Higher amount."
         )
     ]
 
@@ -108,10 +108,10 @@ final class DonationStore {
             productsByID = Dictionary(uniqueKeysWithValues: products.map { ($0.id, $0) })
 
             if products.isEmpty {
-                banner = .info("No donation products are configured for this build yet. Connect these product IDs in App Store Connect or attach a StoreKit configuration for local testing.")
+                banner = .info("No support purchase products are configured for this build yet. Connect these product IDs in App Store Connect or attach a StoreKit configuration for local testing.")
             }
         } catch {
-            banner = .error("OpenNow couldn't load donation products right now. \(error.localizedDescription)")
+            banner = .error("OpenNow couldn't load support purchase products right now. \(error.localizedDescription)")
         }
     }
 
@@ -134,7 +134,7 @@ final class DonationStore {
         }
 
         guard let product = productsByID[tier.productID] else {
-            banner = .info("This donation tier isn't configured yet for the current build. Add \(tier.productID) in App Store Connect or a local StoreKit file before testing purchases.")
+            banner = .info("This support purchase tier isn't configured yet for the current build. Add \(tier.productID) in App Store Connect or a local StoreKit file before testing purchases.")
             return
         }
 
@@ -148,7 +148,7 @@ final class DonationStore {
             case .success(let verification):
                 let transaction = try verified(verification)
                 await transaction.finish()
-                banner = .success("Your \(displayPrice(for: tier)) tip was received.")
+                banner = .success("Your \(displayPrice(for: tier)) support purchase was received.")
             case .pending:
                 banner = .pending("Your purchase is waiting for approval or App Store processing.")
             case .userCancelled:

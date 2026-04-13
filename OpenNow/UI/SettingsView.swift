@@ -10,7 +10,7 @@ struct SettingsView: View {
                     Label("Support OpenNow", systemImage: "heart")
                         .font(.headline)
 
-                    Text("OpenNow offers simple one-time tips through the App Store.")
+                    Text("OpenNow offers simple one-time support purchases through the App Store.")
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -30,9 +30,9 @@ struct SettingsView: View {
                     }
                 }
             } header: {
-                Text("Tip Amount")
+                Text("Support Amount")
             } footer: {
-                Text("Tips use standard App Store in-app purchases. Amounts are fixed.")
+                Text("Support purchases use standard App Store in-app purchases. Amounts are fixed and do not unlock features.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -89,7 +89,7 @@ private struct DonationTierRow: View {
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 54, alignment: .trailing)
 
-            Button(isBusy ? "Processing…" : "Tip") {
+            Button(isBusy ? "Processing…" : "Buy") {
                 action()
             }
             .buttonStyle(.bordered)
