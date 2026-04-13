@@ -1,0 +1,34 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="baseFillV15" x1="120" y1="88" x2="900" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DCE3E7"/>
+      <stop offset="1" stop-color="#C3CCD1"/>
+    </linearGradient>
+    <linearGradient id="bandFillV15" x1="112" y1="84" x2="896" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5F736C"/>
+      <stop offset="0.52" stop-color="#4B5E57"/>
+      <stop offset="1" stop-color="#3B4B46"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV15" x1="154" y1="366" x2="870" y2="366" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#607383"/>
+      <stop offset="1" stop-color="#6D8090"/>
+    </linearGradient>
+    <linearGradient id="lineLightV15" x1="154" y1="514" x2="830" y2="886" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#80909B"/>
+      <stop offset="1" stop-color="#93A0AA"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#baseFillV15)"/>
+
+  <rect x="72" y="72" width="880" height="188" rx="56" fill="url(#bandFillV15)"/>
+
+  <rect x="144" y="134" width="478" height="14" rx="7" fill="#E9F0EC" fill-opacity="0.82"/>
+  <rect x="144" y="172" width="390" height="12" rx="6" fill="#E9F0EC" fill-opacity="0.58"/>
+
+  <rect x="154" y="346" width="716" height="48" rx="24" fill="url(#lineStrongV15)"/>
+  <rect x="154" y="510" width="590" height="42" rx="21" fill="url(#lineLightV15)" fill-opacity="0.98"/>
+  <rect x="154" y="650" width="634" height="42" rx="21" fill="url(#lineLightV15)" fill-opacity="0.86"/>
+  <rect x="154" y="784" width="514" height="38" rx="19" fill="url(#lineLightV15)" fill-opacity="0.74"/>
+  <rect x="154" y="880" width="414" height="34" rx="17" fill="url(#lineLightV15)" fill-opacity="0.62"/>
+</svg>

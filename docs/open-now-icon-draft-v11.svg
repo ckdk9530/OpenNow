@@ -1,0 +1,53 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperFillV11" x1="88" y1="72" x2="936" y2="952" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E9EEF0"/>
+      <stop offset="1" stop-color="#D3DADF"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV11" x1="74" y1="58" x2="950" y2="966" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FAFCFC" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#BAC3C8" stop-opacity="0.84"/>
+    </linearGradient>
+    <linearGradient id="bandFillV11" x1="112" y1="110" x2="860" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#657A73"/>
+      <stop offset="0.52" stop-color="#52645E"/>
+      <stop offset="1" stop-color="#42524D"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV11" x1="168" y1="358" x2="856" y2="358" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6F8190"/>
+      <stop offset="1" stop-color="#7D8E9C"/>
+    </linearGradient>
+    <linearGradient id="lineLightV11" x1="168" y1="500" x2="814" y2="882" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8F9CA7"/>
+      <stop offset="1" stop-color="#A2ADB6"/>
+    </linearGradient>
+    <filter id="paperShadowV11" x="28" y="44" width="968" height="964" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="22"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12549 0 0 0 0 0.14902 0 0 0 0 0.176471 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#000000" fill-opacity="0"/>
+
+  <g filter="url(#paperShadowV11)">
+    <rect x="72" y="56" width="880" height="896" rx="112" fill="url(#paperFillV11)"/>
+    <rect x="72" y="56" width="880" height="896" rx="112" stroke="url(#paperEdgeV11)" stroke-width="4"/>
+
+    <path d="M112 108C112 90.3269 126.327 76 144 76H880V220H112V108Z" fill="url(#bandFillV11)"/>
+    <path d="M112 220H880" stroke="#3D4D48" stroke-opacity="0.3" stroke-width="3"/>
+
+    <rect x="166" y="118" width="462" height="12" rx="6" fill="#EEF5F1" fill-opacity="0.82"/>
+    <rect x="166" y="152" width="378" height="10" rx="5" fill="#EEF5F1" fill-opacity="0.6"/>
+
+    <rect x="168" y="350" width="688" height="46" rx="23" fill="url(#lineStrongV11)"/>
+    <rect x="168" y="506" width="570" height="40" rx="20" fill="url(#lineLightV11)" fill-opacity="0.96"/>
+    <rect x="168" y="644" width="612" height="40" rx="20" fill="url(#lineLightV11)" fill-opacity="0.84"/>
+    <rect x="168" y="776" width="496" height="36" rx="18" fill="url(#lineLightV11)" fill-opacity="0.72"/>
+    <rect x="168" y="870" width="400" height="32" rx="16" fill="url(#lineLightV11)" fill-opacity="0.6"/>
+  </g>
+</svg>

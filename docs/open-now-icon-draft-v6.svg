@@ -1,0 +1,63 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperFillV6" x1="176" y1="42" x2="846" y2="994" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E9EDF0"/>
+      <stop offset="1" stop-color="#D3D9DD"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV6" x1="160" y1="32" x2="858" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8FBFC" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#B7C0C6" stop-opacity="0.82"/>
+    </linearGradient>
+    <linearGradient id="bandFillV6" x1="192" y1="60" x2="754" y2="206" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#71857E"/>
+      <stop offset="0.5" stop-color="#5B6E67"/>
+      <stop offset="1" stop-color="#495B55"/>
+    </linearGradient>
+    <linearGradient id="foldFillV6" x1="718" y1="72" x2="894" y2="258" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0F4F6"/>
+      <stop offset="1" stop-color="#C8D0D5"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV6" x1="266" y1="336" x2="738" y2="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6F8190"/>
+      <stop offset="1" stop-color="#7C8E9B"/>
+    </linearGradient>
+    <linearGradient id="lineLightV6" x1="266" y1="470" x2="696" y2="864" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8D9AA5"/>
+      <stop offset="1" stop-color="#A0ABB4"/>
+    </linearGradient>
+    <filter id="paperShadowV6" x="88" y="10" width="860" height="1028" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="24"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12549 0 0 0 0 0.14902 0 0 0 0 0.176471 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#000000" fill-opacity="0"/>
+
+  <g filter="url(#paperShadowV6)">
+    <path d="M158 96C158 58.4446 188.445 28 226 28H713L840 155V880C840 932.467 797.467 975 745 975H253C200.533 975 158 932.467 158 880V96Z" fill="url(#paperFillV6)"/>
+    <path d="M158 96C158 58.4446 188.445 28 226 28H713L840 155V880C840 932.467 797.467 975 745 975H253C200.533 975 158 932.467 158 880V96Z" stroke="url(#paperEdgeV6)" stroke-width="4"/>
+
+    <path d="M196 84C196 63.0132 213.013 46 234 46H706L785 125V189H196V84Z" fill="url(#bandFillV6)"/>
+    <path d="M196 189H785" stroke="#40504C" stroke-opacity="0.3" stroke-width="3"/>
+
+    <path d="M713 28L840 155H760C734.595 155 714 134.405 714 109V28H713Z" fill="url(#foldFillV6)"/>
+    <path d="M713 28L840 155H760C734.595 155 714 134.405 714 109V28H713Z" stroke="#D0D8DC" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M714 30V109C714 134.405 734.595 155 760 155H838" stroke="#889892" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="260" y="94" width="338" height="11" rx="5.5" fill="#EDF5F1" fill-opacity="0.8"/>
+    <rect x="260" y="126" width="276" height="9" rx="4.5" fill="#EDF5F1" fill-opacity="0.58"/>
+
+    <rect x="266" y="314" width="470" height="38" rx="19" fill="url(#lineStrongV6)"/>
+    <rect x="266" y="462" width="388" height="32" rx="16" fill="url(#lineLightV6)" fill-opacity="0.96"/>
+    <rect x="266" y="602" width="418" height="32" rx="16" fill="url(#lineLightV6)" fill-opacity="0.84"/>
+    <rect x="266" y="740" width="340" height="28" rx="14" fill="url(#lineLightV6)" fill-opacity="0.72"/>
+    <rect x="266" y="852" width="272" height="24" rx="12" fill="url(#lineLightV6)" fill-opacity="0.6"/>
+
+    <path d="M250 940H732" stroke="#BAC2C7" stroke-opacity="0.46" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

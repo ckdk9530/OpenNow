@@ -1,0 +1,73 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="canvasFillV5" x1="112" y1="88" x2="896" y2="948" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D8DFE3"/>
+      <stop offset="0.5" stop-color="#CDD5DA"/>
+      <stop offset="1" stop-color="#C1C9CF"/>
+    </linearGradient>
+    <radialGradient id="canvasGlowV5" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(294 248) rotate(38.7) scale(684 648)">
+      <stop stop-color="#EEF3F5" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#EEF3F5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paperFillV5" x1="184" y1="52" x2="836" y2="988" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ECEFF1"/>
+      <stop offset="1" stop-color="#D6DBDE"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV5" x1="170" y1="40" x2="852" y2="994" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7FAFB" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#B9C2C7" stop-opacity="0.84"/>
+    </linearGradient>
+    <linearGradient id="bandFillV5" x1="210" y1="66" x2="742" y2="194" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6F817B"/>
+      <stop offset="0.52" stop-color="#586A65"/>
+      <stop offset="1" stop-color="#465853"/>
+    </linearGradient>
+    <linearGradient id="foldFillV5" x1="706" y1="74" x2="882" y2="254" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F1F4F5"/>
+      <stop offset="1" stop-color="#CAD2D6"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV5" x1="308" y1="314" x2="708" y2="314" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#728391"/>
+      <stop offset="1" stop-color="#81919D"/>
+    </linearGradient>
+    <linearGradient id="lineLightV5" x1="308" y1="434" x2="650" y2="792" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#93A0AA"/>
+      <stop offset="1" stop-color="#A5B0B8"/>
+    </linearGradient>
+    <filter id="paperShadowV5" x="90" y="18" width="844" height="1012" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="24"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.129412 0 0 0 0 0.152941 0 0 0 0 0.180392 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasFillV5)"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasGlowV5)"/>
+
+  <g filter="url(#paperShadowV5)">
+    <path d="M170 100C170 65.7583 197.758 38 232 38H707L830 161V874C830 924.81 788.81 966 738 966H262C211.19 966 170 924.81 170 874V100Z" fill="url(#paperFillV5)"/>
+    <path d="M170 100C170 65.7583 197.758 38 232 38H707L830 161V874C830 924.81 788.81 966 738 966H262C211.19 966 170 924.81 170 874V100Z" stroke="url(#paperEdgeV5)" stroke-width="4"/>
+
+    <path d="M206 90C206 69.0132 223.013 52 244 52H700L775 127V183H206V90Z" fill="url(#bandFillV5)"/>
+    <path d="M206 183H775" stroke="#3F4E4A" stroke-opacity="0.3" stroke-width="3"/>
+
+    <path d="M707 38L830 161H753C727.043 161 706 139.957 706 114V38H707Z" fill="url(#foldFillV5)"/>
+    <path d="M707 38L830 161H753C727.043 161 706 139.957 706 114V38H707Z" stroke="#D2DADF" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M707 40V114C707 139.405 727.595 160 753 160H828" stroke="#899994" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="280" y="98" width="308" height="10" rx="5" fill="#EDF5F1" fill-opacity="0.78"/>
+    <rect x="280" y="126" width="252" height="8" rx="4" fill="#EDF5F1" fill-opacity="0.56"/>
+
+    <rect x="308" y="292" width="392" height="32" rx="16" fill="url(#lineStrongV5)"/>
+    <rect x="308" y="430" width="324" height="26" rx="13" fill="url(#lineLightV5)" fill-opacity="0.94"/>
+    <rect x="308" y="560" width="350" height="26" rx="13" fill="url(#lineLightV5)" fill-opacity="0.82"/>
+    <rect x="308" y="690" width="286" height="22" rx="11" fill="url(#lineLightV5)" fill-opacity="0.68"/>
+    <rect x="308" y="804" width="228" height="18" rx="9" fill="url(#lineLightV5)" fill-opacity="0.56"/>
+
+    <path d="M264 932H728" stroke="#BAC2C7" stroke-opacity="0.54" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

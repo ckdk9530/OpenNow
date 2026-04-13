@@ -1,0 +1,33 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="baseFillV19" x1="120" y1="88" x2="900" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DCE3E7"/>
+      <stop offset="1" stop-color="#C3CCD1"/>
+    </linearGradient>
+    <linearGradient id="bandFillV19" x1="156" y1="98" x2="868" y2="244" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5F736C"/>
+      <stop offset="0.52" stop-color="#4B5E57"/>
+      <stop offset="1" stop-color="#3B4B46"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV19" x1="206" y1="394" x2="818" y2="394" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#607383"/>
+      <stop offset="1" stop-color="#6D8090"/>
+    </linearGradient>
+    <linearGradient id="lineLightV19" x1="206" y1="530" x2="760" y2="806" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#80909B"/>
+      <stop offset="1" stop-color="#93A0AA"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#baseFillV19)"/>
+
+  <rect x="156" y="94" width="712" height="164" rx="40" fill="url(#bandFillV19)"/>
+
+  <rect x="194" y="136" width="392" height="14" rx="7" fill="#E9F0EC" fill-opacity="0.82"/>
+  <rect x="194" y="172" width="308" height="12" rx="6" fill="#E9F0EC" fill-opacity="0.58"/>
+
+  <rect x="206" y="370" width="612" height="48" rx="24" fill="url(#lineStrongV19)"/>
+  <rect x="206" y="518" width="518" height="42" rx="21" fill="url(#lineLightV19)" fill-opacity="0.98"/>
+  <rect x="206" y="646" width="462" height="40" rx="20" fill="url(#lineLightV19)" fill-opacity="0.84"/>
+  <rect x="206" y="768" width="528" height="40" rx="20" fill="url(#lineLightV19)" fill-opacity="0.72"/>
+</svg>

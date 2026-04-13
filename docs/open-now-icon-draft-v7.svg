@@ -1,0 +1,63 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperFillV7" x1="132" y1="56" x2="888" y2="972" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E9EDF0"/>
+      <stop offset="1" stop-color="#D3D9DD"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV7" x1="118" y1="42" x2="900" y2="980" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8FBFC" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#B7C0C6" stop-opacity="0.82"/>
+    </linearGradient>
+    <linearGradient id="bandFillV7" x1="152" y1="70" x2="808" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#71857E"/>
+      <stop offset="0.5" stop-color="#5B6E67"/>
+      <stop offset="1" stop-color="#495B55"/>
+    </linearGradient>
+    <linearGradient id="foldFillV7" x1="748" y1="82" x2="930" y2="246" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0F4F6"/>
+      <stop offset="1" stop-color="#C8D0D5"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV7" x1="238" y1="336" x2="786" y2="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6F8190"/>
+      <stop offset="1" stop-color="#7C8E9B"/>
+    </linearGradient>
+    <linearGradient id="lineLightV7" x1="238" y1="474" x2="742" y2="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8D9AA5"/>
+      <stop offset="1" stop-color="#A0ABB4"/>
+    </linearGradient>
+    <filter id="paperShadowV7" x="58" y="18" width="908" height="1000" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="22"/>
+      <feGaussianBlur stdDeviation="22"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12549 0 0 0 0 0.14902 0 0 0 0 0.176471 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#000000" fill-opacity="0"/>
+
+  <g filter="url(#paperShadowV7)">
+    <path d="M154 104C154 66.4446 184.445 36 222 36H747L870 159V864C870 916.467 827.467 959 775 959H249C196.533 959 154 916.467 154 864V104Z" fill="url(#paperFillV7)"/>
+    <path d="M154 104C154 66.4446 184.445 36 222 36H747L870 159V864C870 916.467 827.467 959 775 959H249C196.533 959 154 916.467 154 864V104Z" stroke="url(#paperEdgeV7)" stroke-width="4"/>
+
+    <path d="M184 92C184 71.0132 201.013 54 222 54H740L817 131V193H184V92Z" fill="url(#bandFillV7)"/>
+    <path d="M184 193H817" stroke="#40504C" stroke-opacity="0.3" stroke-width="3"/>
+
+    <path d="M747 36L870 159H794C768.595 159 748 138.405 748 113V36H747Z" fill="url(#foldFillV7)"/>
+    <path d="M747 36L870 159H794C768.595 159 748 138.405 748 113V36H747Z" stroke="#D0D8DC" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M748 38V113C748 138.405 768.595 159 794 159H868" stroke="#889892" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="244" y="100" width="376" height="11" rx="5.5" fill="#EDF5F1" fill-opacity="0.8"/>
+    <rect x="244" y="132" width="306" height="9" rx="4.5" fill="#EDF5F1" fill-opacity="0.58"/>
+
+    <rect x="238" y="316" width="542" height="40" rx="20" fill="url(#lineStrongV7)"/>
+    <rect x="238" y="466" width="446" height="34" rx="17" fill="url(#lineLightV7)" fill-opacity="0.96"/>
+    <rect x="238" y="606" width="480" height="34" rx="17" fill="url(#lineLightV7)" fill-opacity="0.84"/>
+    <rect x="238" y="742" width="390" height="30" rx="15" fill="url(#lineLightV7)" fill-opacity="0.72"/>
+    <rect x="238" y="850" width="314" height="26" rx="13" fill="url(#lineLightV7)" fill-opacity="0.6"/>
+
+    <path d="M228 924H760" stroke="#BAC2C7" stroke-opacity="0.46" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

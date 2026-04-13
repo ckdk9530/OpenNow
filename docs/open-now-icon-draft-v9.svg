@@ -1,0 +1,71 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="canvasFillV9" x1="116" y1="96" x2="904" y2="936" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C5CED1"/>
+      <stop offset="0.5" stop-color="#B7C0C4"/>
+      <stop offset="1" stop-color="#A9B3B7"/>
+    </linearGradient>
+    <radialGradient id="canvasGlowV9" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(304 240) rotate(38.7) scale(690 656)">
+      <stop stop-color="#E8EEF0" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#E8EEF0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paperFillV9" x1="112" y1="76" x2="914" y2="954" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EEF2F4"/>
+      <stop offset="1" stop-color="#D6DDE0"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV9" x1="96" y1="60" x2="926" y2="966" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FAFCFC" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#BEC7CC" stop-opacity="0.84"/>
+    </linearGradient>
+    <linearGradient id="bandFillV9" x1="110" y1="108" x2="850" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#667B73"/>
+      <stop offset="0.52" stop-color="#53665F"/>
+      <stop offset="1" stop-color="#43544E"/>
+    </linearGradient>
+    <linearGradient id="foldFillV9" x1="778" y1="108" x2="940" y2="252" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4F7F8"/>
+      <stop offset="1" stop-color="#D0D8DC"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV9" x1="184" y1="360" x2="840" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#71828F"/>
+      <stop offset="1" stop-color="#7E8F9C"/>
+    </linearGradient>
+    <linearGradient id="lineLightV9" x1="184" y1="496" x2="800" y2="874" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8F9CA6"/>
+      <stop offset="1" stop-color="#A2ADB5"/>
+    </linearGradient>
+    <filter id="paperShadowV9" x="40" y="56" width="944" height="944" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="22"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.129412 0 0 0 0 0.152941 0 0 0 0 0.180392 0 0 0 0.24 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasFillV9)"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasGlowV9)"/>
+
+  <g filter="url(#paperShadowV9)">
+    <path d="M72 116C72 82.8629 98.8629 56 132 56H796L952 212V848C952 905.438 905.438 952 848 952H176C118.562 952 72 905.438 72 848V116Z" fill="url(#paperFillV9)"/>
+    <path d="M72 116C72 82.8629 98.8629 56 132 56H796L952 212V848C952 905.438 905.438 952 848 952H176C118.562 952 72 905.438 72 848V116Z" stroke="url(#paperEdgeV9)" stroke-width="4"/>
+
+    <path d="M108 108C108 90.3269 122.327 76 140 76H792L876 160V222H108V108Z" fill="url(#bandFillV9)"/>
+    <path d="M108 222H876" stroke="#3E4E49" stroke-opacity="0.3" stroke-width="3"/>
+
+    <path d="M796 56L952 212H848C819.281 212 796 188.719 796 160V56Z" fill="url(#foldFillV9)"/>
+    <path d="M796 56L952 212H848C819.281 212 796 188.719 796 160V56Z" stroke="#D4DCE0" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M797 58V160C797 188.166 819.834 211 848 211H950" stroke="#8A9993" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="174" y="120" width="446" height="12" rx="6" fill="#EEF5F1" fill-opacity="0.82"/>
+    <rect x="174" y="154" width="364" height="10" rx="5" fill="#EEF5F1" fill-opacity="0.6"/>
+
+    <rect x="184" y="350" width="656" height="44" rx="22" fill="url(#lineStrongV9)"/>
+    <rect x="184" y="502" width="544" height="38" rx="19" fill="url(#lineLightV9)" fill-opacity="0.96"/>
+    <rect x="184" y="640" width="586" height="38" rx="19" fill="url(#lineLightV9)" fill-opacity="0.84"/>
+    <rect x="184" y="772" width="476" height="34" rx="17" fill="url(#lineLightV9)" fill-opacity="0.72"/>
+    <rect x="184" y="868" width="384" height="30" rx="15" fill="url(#lineLightV9)" fill-opacity="0.6"/>
+  </g>
+</svg>

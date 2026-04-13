@@ -1,0 +1,62 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperFillV3" x1="194" y1="58" x2="822" y2="982" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FEFCF8"/>
+      <stop offset="1" stop-color="#ECE5DC"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV3" x1="174" y1="46" x2="848" y2="994" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#D4CCBF" stop-opacity="0.82"/>
+    </linearGradient>
+    <linearGradient id="bandFillV3" x1="208" y1="66" x2="744" y2="194" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E0B84F"/>
+      <stop offset="1" stop-color="#C99B33"/>
+    </linearGradient>
+    <linearGradient id="foldFillV3" x1="706" y1="74" x2="882" y2="254" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8EA"/>
+      <stop offset="1" stop-color="#DDD3C5"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV3" x1="308" y1="314" x2="708" y2="314" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#92A0AC"/>
+      <stop offset="1" stop-color="#A5B0BA"/>
+    </linearGradient>
+    <linearGradient id="lineLightV3" x1="308" y1="434" x2="650" y2="792" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B6BEC7"/>
+      <stop offset="1" stop-color="#C8CFD5"/>
+    </linearGradient>
+    <filter id="paperShadowV3" x="94" y="18" width="836" height="1002" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="22"/>
+      <feGaussianBlur stdDeviation="22"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.164706 0 0 0 0 0.196078 0 0 0 0 0.239216 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#000000" fill-opacity="0"/>
+
+  <g filter="url(#paperShadowV3)">
+    <path d="M170 100C170 65.7583 197.758 38 232 38H707L830 161V874C830 924.81 788.81 966 738 966H262C211.19 966 170 924.81 170 874V100Z" fill="url(#paperFillV3)"/>
+    <path d="M170 100C170 65.7583 197.758 38 232 38H707L830 161V874C830 924.81 788.81 966 738 966H262C211.19 966 170 924.81 170 874V100Z" stroke="url(#paperEdgeV3)" stroke-width="4"/>
+
+    <path d="M206 90C206 69.0132 223.013 52 244 52H700L775 127V183H206V90Z" fill="url(#bandFillV3)"/>
+    <path d="M206 183H775" stroke="#B78B2A" stroke-opacity="0.28" stroke-width="3"/>
+
+    <path d="M707 38L830 161H753C727.043 161 706 139.957 706 114V38H707Z" fill="url(#foldFillV3)"/>
+    <path d="M707 38L830 161H753C727.043 161 706 139.957 706 114V38H707Z" stroke="#E8DECF" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M707 40V114C707 139.405 727.595 160 753 160H828" stroke="#C7B9A1" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="280" y="98" width="308" height="10" rx="5" fill="#FFF6DD" fill-opacity="0.72"/>
+    <rect x="280" y="126" width="252" height="8" rx="4" fill="#FFF6DD" fill-opacity="0.54"/>
+
+    <rect x="308" y="292" width="392" height="32" rx="16" fill="url(#lineStrongV3)"/>
+    <rect x="308" y="430" width="324" height="26" rx="13" fill="url(#lineLightV3)" fill-opacity="0.9"/>
+    <rect x="308" y="560" width="350" height="26" rx="13" fill="url(#lineLightV3)" fill-opacity="0.76"/>
+    <rect x="308" y="690" width="286" height="22" rx="11" fill="url(#lineLightV3)" fill-opacity="0.62"/>
+    <rect x="308" y="804" width="228" height="18" rx="9" fill="url(#lineLightV3)" fill-opacity="0.5"/>
+
+    <path d="M264 932H728" stroke="#D8D0C4" stroke-opacity="0.46" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

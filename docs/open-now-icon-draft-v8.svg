@@ -1,0 +1,71 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="canvasFillV8" x1="120" y1="96" x2="906" y2="938" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C5CED1"/>
+      <stop offset="0.52" stop-color="#B8C1C5"/>
+      <stop offset="1" stop-color="#AAB4B8"/>
+    </linearGradient>
+    <radialGradient id="canvasGlowV8" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(306 246) rotate(38.7) scale(692 662)">
+      <stop stop-color="#E9EFF1" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#E9EFF1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paperFillV8" x1="152" y1="88" x2="888" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EEF2F4"/>
+      <stop offset="1" stop-color="#D7DDE0"/>
+    </linearGradient>
+    <linearGradient id="paperEdgeV8" x1="138" y1="74" x2="900" y2="956" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F9FBFC" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#BEC7CC" stop-opacity="0.84"/>
+    </linearGradient>
+    <linearGradient id="bandFillV8" x1="150" y1="118" x2="812" y2="218" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#667B73"/>
+      <stop offset="0.52" stop-color="#53665F"/>
+      <stop offset="1" stop-color="#43544E"/>
+    </linearGradient>
+    <linearGradient id="foldFillV8" x1="728" y1="120" x2="900" y2="270" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F3F6F7"/>
+      <stop offset="1" stop-color="#D0D8DC"/>
+    </linearGradient>
+    <linearGradient id="lineStrongV8" x1="228" y1="366" x2="792" y2="366" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#70818F"/>
+      <stop offset="1" stop-color="#7F909D"/>
+    </linearGradient>
+    <linearGradient id="lineLightV8" x1="228" y1="500" x2="760" y2="866" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8E9CA6"/>
+      <stop offset="1" stop-color="#A2ADB5"/>
+    </linearGradient>
+    <filter id="paperShadowV8" x="74" y="72" width="876" height="912" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="24"/>
+      <feGaussianBlur stdDeviation="22"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.129412 0 0 0 0 0.152941 0 0 0 0 0.180392 0 0 0 0.24 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasFillV8)"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#canvasGlowV8)"/>
+
+  <g filter="url(#paperShadowV8)">
+    <path d="M120 120C120 89.0721 145.072 64 176 64H748L874 190V856C874 902.392 836.392 940 790 940H204C157.608 940 120 902.392 120 856V120Z" fill="url(#paperFillV8)"/>
+    <path d="M120 120C120 89.0721 145.072 64 176 64H748L874 190V856C874 902.392 836.392 940 790 940H204C157.608 940 120 902.392 120 856V120Z" stroke="url(#paperEdgeV8)" stroke-width="4"/>
+
+    <path d="M154 112C154 94.3269 168.327 80 186 80H742L810 148V214H154V112Z" fill="url(#bandFillV8)"/>
+    <path d="M154 214H810" stroke="#3E4E49" stroke-opacity="0.3" stroke-width="3"/>
+
+    <path d="M748 64L874 190H796C769.49 190 748 168.51 748 142V64Z" fill="url(#foldFillV8)"/>
+    <path d="M748 64L874 190H796C769.49 190 748 168.51 748 142V64Z" stroke="#D4DCE0" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M749 66V142C749 167.958 770.042 189 796 189H872" stroke="#8A9993" stroke-width="3.5" stroke-linecap="round"/>
+
+    <rect x="216" y="120" width="404" height="12" rx="6" fill="#EEF5F1" fill-opacity="0.82"/>
+    <rect x="216" y="154" width="330" height="10" rx="5" fill="#EEF5F1" fill-opacity="0.6"/>
+
+    <rect x="228" y="348" width="564" height="42" rx="21" fill="url(#lineStrongV8)"/>
+    <rect x="228" y="498" width="466" height="36" rx="18" fill="url(#lineLightV8)" fill-opacity="0.96"/>
+    <rect x="228" y="636" width="504" height="36" rx="18" fill="url(#lineLightV8)" fill-opacity="0.84"/>
+    <rect x="228" y="770" width="410" height="32" rx="16" fill="url(#lineLightV8)" fill-opacity="0.72"/>
+    <rect x="228" y="870" width="330" height="28" rx="14" fill="url(#lineLightV8)" fill-opacity="0.6"/>
+  </g>
+</svg>
