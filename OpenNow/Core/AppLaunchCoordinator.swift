@@ -88,10 +88,10 @@ final class AppLaunchCoordinator {
         restoreWindowFrameIfPossible()
         webBridge.setFontScale(readerFontScale)
 
-        if let path = ProcessInfo.processInfo.environment["OPENNOW_TEST_FILE"], path.isEmpty == false {
+        if let testFileURL = RuntimeEnvironment.launchTestFileURL() {
             open(
                 descriptor: documentAccessController.prepareAccess(
-                    for: URL(fileURLWithPath: path),
+                    for: testFileURL,
                     authorizedFolders: authorizedFolders
                 ),
                 source: .external,
@@ -346,22 +346,29 @@ final class AppLaunchCoordinator {
 
     private func loadDocument(using descriptor: DocumentAccessDescriptor) async throws -> OpenedDocument {
         let markdownRenderer = self.markdownRenderer
-        let loadedDocument: OpenedDocument = try await Task.detached(priority: .userInitiated) { [markdownRenderer] () throws -> OpenedDocument in
-            let resourceValues = try descriptor.fileURL.resourceValues(forKeys: [.contentModificationDateKey])
-            let markdown = try String(contentsOf: descriptor.fileURL, encoding: .utf8)
-            let rendered = try markdownRenderer.render(markdown: markdown, baseURL: descriptor.directoryURL)
-
-            return OpenedDocument(
-                url: descriptor.fileURL,
-                directoryURL: descriptor.directoryURL,
-                rawMarkdown: markdown,
-                renderedHTML: rendered.html,
-                outlineItems: rendered.outlineItems,
-                lastKnownModificationDate: resourceValues.contentModificationDate
-            )
+        let loadedDocument = try await Task.detached(priority: .userInitiated) { [markdownRenderer] in
+            try Self.readDocument(descriptor: descriptor, markdownRenderer: markdownRenderer)
         }.value
 
         return loadedDocument
+    }
+
+    nonisolated private static func readDocument(
+        descriptor: DocumentAccessDescriptor,
+        markdownRenderer: MarkdownRenderer
+    ) throws -> OpenedDocument {
+        let resourceValues = try descriptor.fileURL.resourceValues(forKeys: [.contentModificationDateKey])
+        let markdown = try String(contentsOf: descriptor.fileURL, encoding: .utf8)
+        let rendered = try markdownRenderer.render(markdown: markdown, baseURL: descriptor.directoryURL)
+
+        return OpenedDocument(
+            url: descriptor.fileURL,
+            directoryURL: descriptor.directoryURL,
+            rawMarkdown: markdown,
+            renderedHTML: rendered.html,
+            outlineItems: rendered.outlineItems,
+            lastKnownModificationDate: resourceValues.contentModificationDate
+        )
     }
 
     private func attachFileWatcher(for descriptor: DocumentAccessDescriptor) {

@@ -226,4 +226,27 @@ struct OpenNowTests {
 
         #expect(rootURL.path == "/Volumes/Archive")
     }
+
+    @Test func runtimeEnvironmentIgnoresOpenNowHooksOutsideXCTest() {
+        let environment = [
+            "OPENNOW_DEFAULTS_SUITE": "OpenNowManual",
+            "OPENNOW_TEST_FILE": "/tmp/fixture.md"
+        ]
+
+        #expect(RuntimeEnvironment.isRunningUnderXCTest(environment) == false)
+        #expect(RuntimeEnvironment.defaultsSuiteName(environment) == nil)
+        #expect(RuntimeEnvironment.launchTestFileURL(environment) == nil)
+    }
+
+    @Test func runtimeEnvironmentExposesOpenNowHooksInsideXCTest() {
+        let environment = [
+            "XCTestConfigurationFilePath": "/tmp/session.xctestconfiguration",
+            "OPENNOW_DEFAULTS_SUITE": "OpenNowUITests",
+            "OPENNOW_TEST_FILE": "/tmp/fixture.md"
+        ]
+
+        #expect(RuntimeEnvironment.isRunningUnderXCTest(environment))
+        #expect(RuntimeEnvironment.defaultsSuiteName(environment) == "OpenNowUITests")
+        #expect(RuntimeEnvironment.launchTestFileURL(environment)?.path == "/tmp/fixture.md")
+    }
 }

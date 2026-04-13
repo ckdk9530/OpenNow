@@ -5,7 +5,7 @@ struct MarkdownRenderer: Sendable {
     nonisolated init() {}
 
     nonisolated func render(markdown: String, baseURL: URL) throws -> RenderedDocument {
-        let tableTransform = GFMTableTransformer().transform(markdown)
+        let tableTransform = GFMTableTransformer.transform(markdown)
         let html = try Down(markdownString: tableTransform.markdown).toHTML()
         let restoredTablesHTML = tableTransform.restore(in: html)
         let outlineItems = OutlineExtractor.extract(from: markdown)
@@ -275,7 +275,7 @@ struct MarkdownRenderer: Sendable {
             return nil
         }
 
-        return ReaderAssetURLScheme.makeURL(for: fileURL).absoluteString
+        return makeReaderAssetURLString(for: fileURL)
     }
 
     nonisolated private func resolvedLocalAssetURL(for source: String, baseURL: URL) -> URL? {
@@ -285,7 +285,7 @@ struct MarkdownRenderer: Sendable {
               normalizedSource.hasPrefix("data:") == false,
               normalizedSource.hasPrefix("blob:") == false,
               normalizedSource.hasPrefix("#") == false,
-              normalizedSource.hasPrefix("\(ReaderAssetURLScheme.name):") == false
+              normalizedSource.hasPrefix("\(readerAssetSchemeName):") == false
         else {
             return nil
         }
@@ -300,6 +300,23 @@ struct MarkdownRenderer: Sendable {
 
         let decodedPath = normalizedSource.removingPercentEncoding ?? normalizedSource
         return URL(fileURLWithPath: decodedPath, relativeTo: baseURL).standardizedFileURL
+    }
+
+    nonisolated private var readerAssetSchemeName: String {
+        "opennow-file"
+    }
+
+    nonisolated private func makeReaderAssetURLString(for fileURL: URL) -> String {
+        let standardizedFileURL = fileURL.standardizedFileURL
+        let encodedPath = standardizedFileURL.path
+            .addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+            ?? standardizedFileURL.path
+
+        var components = URLComponents()
+        components.scheme = readerAssetSchemeName
+        components.host = ""
+        components.percentEncodedPath = encodedPath
+        return components.url!.absoluteString
     }
 
     nonisolated private func normalizeLocalAssetSource(_ source: String) -> String {

@@ -90,9 +90,7 @@ private struct SidebarFooterView: View {
             Divider()
 
             HStack {
-                Button {
-                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                } label: {
+                SettingsLink {
                     Label("Settings", systemImage: "gearshape")
                         .font(.subheadline.weight(.medium))
                 }

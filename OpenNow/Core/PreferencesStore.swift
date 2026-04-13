@@ -1,11 +1,47 @@
 import AppKit
 import Foundation
 
-final class PreferencesStore {
-    private enum EnvironmentKey {
+enum RuntimeEnvironment {
+    private enum Key {
+        static let xctestConfiguration = "XCTestConfigurationFilePath"
         static let defaultsSuite = "OPENNOW_DEFAULTS_SUITE"
+        static let testFile = "OPENNOW_TEST_FILE"
     }
 
+    nonisolated static func isRunningUnderXCTest(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+        guard let value = environment[Key.xctestConfiguration] else {
+            return false
+        }
+
+        return value.isEmpty == false
+    }
+
+    nonisolated static func defaultsSuiteName(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        guard isRunningUnderXCTest(environment) else {
+            return nil
+        }
+
+        guard let suiteName = environment[Key.defaultsSuite], suiteName.isEmpty == false else {
+            return nil
+        }
+
+        return suiteName
+    }
+
+    nonisolated static func launchTestFileURL(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> URL? {
+        guard isRunningUnderXCTest(environment) else {
+            return nil
+        }
+
+        guard let path = environment[Key.testFile], path.isEmpty == false else {
+            return nil
+        }
+
+        return URL(fileURLWithPath: path)
+    }
+}
+
+final class PreferencesStore {
     private enum Key {
         static let recentFiles = "recentFiles"
         static let lastOpen = "lastOpen"
@@ -32,7 +68,7 @@ final class PreferencesStore {
             return
         }
 
-        if let suiteName = ProcessInfo.processInfo.environment[EnvironmentKey.defaultsSuite],
+        if let suiteName = RuntimeEnvironment.defaultsSuiteName(),
            let suiteDefaults = UserDefaults(suiteName: suiteName) {
             self.defaults = suiteDefaults
             return

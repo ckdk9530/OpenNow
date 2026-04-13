@@ -1,9 +1,7 @@
 import Down
 import Foundation
 
-struct GFMTableTransformer: Sendable {
-    nonisolated init() {}
-
+enum GFMTableTransformer: Sendable {
     struct Result {
         let markdown: String
         let replacements: [String: String]
@@ -33,7 +31,7 @@ struct GFMTableTransformer: Sendable {
         }
     }
 
-    nonisolated func transform(_ markdown: String) -> Result {
+    nonisolated static func transform(_ markdown: String) -> Result {
         let lines = markdown.components(separatedBy: .newlines)
         var output: [String] = []
         var replacements: [String: String] = [:]
@@ -86,7 +84,7 @@ struct GFMTableTransformer: Sendable {
         return Result(markdown: output.joined(separator: "\n"), replacements: replacements)
     }
 
-    nonisolated private func renderTable(headerCells: [String], alignments: [TableAlignment], rows: [[String]]) -> String {
+    nonisolated private static func renderTable(headerCells: [String], alignments: [TableAlignment], rows: [[String]]) -> String {
         let normalizedHeaderCells = normalizeCells(headerCells, count: alignments.count)
         let normalizedRows = rows.map { normalizeCells($0, count: alignments.count) }
 
@@ -109,13 +107,13 @@ struct GFMTableTransformer: Sendable {
         return "<table><thead><tr>\(thead)</tr></thead><tbody>\(tbody)</tbody></table>"
     }
 
-    nonisolated private func makeCell(tag: String, contents: String, alignment: TableAlignment) -> String {
+    nonisolated private static func makeCell(tag: String, contents: String, alignment: TableAlignment) -> String {
         let renderedContents = renderInlineMarkdown(contents)
         let alignAttribute = alignment.htmlAttribute.map { #" align="\#($0)""# } ?? ""
         return "<\(tag)\(alignAttribute)>\(renderedContents)</\(tag)>"
     }
 
-    nonisolated private func renderInlineMarkdown(_ markdown: String) -> String {
+    nonisolated private static func renderInlineMarkdown(_ markdown: String) -> String {
         let trimmed = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false else {
             return ""
@@ -129,7 +127,7 @@ struct GFMTableTransformer: Sendable {
         }
     }
 
-    nonisolated private func stripSingleParagraphWrapper(from html: String) -> String {
+    nonisolated private static func stripSingleParagraphWrapper(from html: String) -> String {
         let trimmed = html.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.hasPrefix("<p>"),
               trimmed.hasSuffix("</p>")
@@ -142,7 +140,7 @@ struct GFMTableTransformer: Sendable {
         return String(trimmed[start..<end])
     }
 
-    nonisolated private func normalizeCells(_ cells: [String], count: Int) -> [String] {
+    nonisolated private static func normalizeCells(_ cells: [String], count: Int) -> [String] {
         let trimmedCells = Array(cells.prefix(count))
         if trimmedCells.count == count {
             return trimmedCells
@@ -151,7 +149,7 @@ struct GFMTableTransformer: Sendable {
         return trimmedCells + Array(repeating: "", count: count - trimmedCells.count)
     }
 
-    nonisolated private func tableCells(from line: String) -> [String]? {
+    nonisolated private static func tableCells(from line: String) -> [String]? {
         guard line.contains("|") else {
             return nil
         }
@@ -198,7 +196,7 @@ struct GFMTableTransformer: Sendable {
         return trimmedCells.isEmpty ? nil : trimmedCells
     }
 
-    nonisolated private func tableAlignments(from line: String) -> [TableAlignment]? {
+    nonisolated private static func tableAlignments(from line: String) -> [TableAlignment]? {
         guard let cells = tableCells(from: line), cells.isEmpty == false else {
             return nil
         }
