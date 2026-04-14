@@ -8,17 +8,28 @@
       <stop offset="100%" stop-color="#0f766e"/>
     </linearGradient>
     <linearGradient id="card" x1="0%" x2="100%" y1="0%" y2="0%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
-      <stop offset="100%" stop-color="#dbeafe" stop-opacity="0.82"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#e0f2fe" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="chip" x1="0%" x2="100%" y1="0%" y2="0%">
+      <stop offset="0%" stop-color="#dbeafe" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#bfdbfe" stop-opacity="0.84"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="320" fill="url(#bg)"/>
   <circle cx="1060" cy="80" r="132" fill="#ffffff" fill-opacity="0.08"/>
   <circle cx="160" cy="260" r="120" fill="#ffffff" fill-opacity="0.08"/>
-  <rect x="84" y="72" width="540" height="176" rx="28" fill="url(#card)"/>
-  <text x="126" y="140" fill="#0f172a" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="46" font-weight="700">OpenNow Render Fixture</text>
-  <text x="126" y="188" fill="#334155" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="24">Checks scaling, contrast, and image loading inside complex Markdown.</text>
-  <text x="126" y="222" fill="#475569" font-family="Menlo, Monaco, monospace" font-size="18">relative-path-image.svg  max-width: 100%  sandbox-sensitive</text>
+  <rect x="84" y="72" width="680" height="184" rx="30" fill="url(#card)"/>
+  <text x="126" y="140" fill="#0f172a" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="42" font-weight="700">OpenNow Render Preview</text>
+  <text x="126" y="188" fill="#334155" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="20">Checks contrast, scaling, and local asset rendering in Markdown.</text>
+  <g transform="translate(126 206)">
+    <rect width="176" height="28" rx="14" fill="url(#chip)"/>
+    <text x="18" y="19" fill="#1e3a8a" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="14" font-weight="600">relative SVG</text>
+    <rect x="188" width="174" height="28" rx="14" fill="url(#chip)"/>
+    <text x="205" y="19" fill="#1e3a8a" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="14" font-weight="600">scales cleanly</text>
+    <rect x="374" width="146" height="28" rx="14" fill="url(#chip)"/>
+    <text x="392" y="19" fill="#1e3a8a" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="14" font-weight="600">local asset</text>
+  </g>
   <g transform="translate(760 70)">
     <rect width="260" height="180" rx="24" fill="#020617" fill-opacity="0.82" stroke="#93c5fd" stroke-opacity="0.4"/>
     <path d="M42 134 L98 74 L142 114 L202 52" fill="none" stroke="#38bdf8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
