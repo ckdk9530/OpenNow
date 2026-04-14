@@ -33,9 +33,6 @@ struct SidebarView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidebar-pane")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            SidebarFooterView()
-        }
     }
 }
 
@@ -87,38 +84,11 @@ private struct SidebarEmptyStateView: View {
             }
             .padding(.horizontal, 18)
             .padding(.top, 22)
-            .padding(.bottom, 64)
+            .padding(.bottom, 24)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidebar-empty-state")
-    }
-}
-
-private struct SidebarFooterView: View {
-    var body: some View {
-        HStack {
-            SettingsLink {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 24, height: 24)
-                    .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .help("Settings")
-            .accessibilityLabel("Settings")
-            .accessibilityIdentifier("sidebar-settings-button")
-
-            Spacer()
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .overlay(alignment: .top) {
-            Divider()
-        }
     }
 }

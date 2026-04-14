@@ -6,22 +6,19 @@ struct ReaderDetailView: View {
     var body: some View {
         Group {
             if let document = coordinator.activeDocument {
-                VStack(spacing: 0) {
-                    DocumentHeaderView(
-                        fileName: document.url.lastPathComponent,
-                        parentPath: document.directoryURL.path
-                    )
-
-                    Divider()
-
-                    ReaderWebView(
-                        html: document.renderedHTML,
-                        documentURL: document.url,
-                        baseURL: document.directoryURL,
-                        bridge: coordinator.webBridge
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .layoutPriority(1)
+                ReaderWebView(
+                    html: document.renderedHTML,
+                    documentURL: document.url,
+                    baseURL: document.directoryURL,
+                    bridge: coordinator.webBridge
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .layoutPriority(1)
+                .overlay(alignment: .topLeading) {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityIdentifier("document-header")
+                        .accessibilityLabel(document.url.lastPathComponent)
                 }
             } else if coordinator.isLoadingDocument {
                 LoadingDocumentView()
@@ -41,32 +38,6 @@ struct ReaderDetailView: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("reader-detail-pane")
-    }
-}
-
-private struct DocumentHeaderView: View {
-    let fileName: String
-    let parentPath: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(fileName)
-                .font(.headline)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .accessibilityIdentifier("document-name-label")
-                .accessibilityLabel("document-header-title")
-            Text(parentPath)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .accessibilityIdentifier("document-header")
     }
 }
 

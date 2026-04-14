@@ -45,6 +45,7 @@ final class AppLaunchCoordinator {
     private var loadTask: Task<Void, Never>?
     private var hasStarted = false
     private var hasRestoredWindowFrame = false
+    private weak var attachedWindow: NSWindow?
 
     convenience init() {
         self.init(
@@ -179,6 +180,7 @@ final class AppLaunchCoordinator {
         currentAccessSession?.stop()
         currentAccessSession = nil
         ReaderAssetSecurityScopeStore.shared.clear()
+        updateWindowChrome()
     }
 
     func addAuthorizedFolderFromPanel() {
@@ -203,7 +205,9 @@ final class AppLaunchCoordinator {
     }
 
     func configureWindow(_ window: NSWindow) {
+        attachedWindow = window
         window.minSize = NSSize(width: 620, height: 420)
+        updateWindowChrome()
     }
 
     func updateWindowFrame(window: NSWindow, frame: CGRect) {
@@ -268,6 +272,7 @@ final class AppLaunchCoordinator {
                 self.isLoadingDocument = false
                 self.loadErrorMessage = nil
                 self.webBridge.setFontScale(self.readerFontScale)
+                self.updateWindowChrome()
 
                 if updateRecentFiles {
                     self.preferencesStore.saveRecentFile(descriptor.recentEntry)
@@ -296,6 +301,7 @@ final class AppLaunchCoordinator {
                 self.currentAccessSession?.stop()
                 self.currentAccessSession = nil
                 ReaderAssetSecurityScopeStore.shared.clear()
+                self.updateWindowChrome()
 
                 if source == .launch {
                     self.loadErrorMessage = nil
@@ -461,6 +467,22 @@ final class AppLaunchCoordinator {
         readerFontScale = clampedScale
         preferencesStore.saveReaderFontScale(clampedScale)
         webBridge.setFontScale(clampedScale)
+    }
+
+    private func updateWindowChrome() {
+        guard let window = attachedWindow else {
+            return
+        }
+
+        if let document = activeDocument {
+            window.title = document.url.lastPathComponent
+            window.subtitle = document.directoryURL.path
+            window.representedURL = document.url
+        } else {
+            window.title = "OpenNow"
+            window.subtitle = ""
+            window.representedURL = nil
+        }
     }
 
     private func presentLoadFailureAlert(message: String, source: OpenRequestSource) {
