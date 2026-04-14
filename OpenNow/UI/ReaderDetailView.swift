@@ -22,8 +22,6 @@ struct ReaderDetailView: View {
                 }
             } else if coordinator.isLoadingDocument {
                 LoadingDocumentView()
-            } else if let loadErrorMessage = coordinator.loadErrorMessage {
-                DocumentErrorView(message: loadErrorMessage)
             } else {
                 EmptyReaderView(
                     recentFiles: coordinator.recentFiles,
@@ -59,31 +57,6 @@ private struct LoadingDocumentView: View {
             }
         }
         .accessibilityIdentifier("document-loading-state")
-    }
-}
-
-private struct DocumentErrorView: View {
-    let message: String
-
-    var body: some View {
-        ReaderStateContainer {
-            VStack(spacing: 14) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                Text("Couldn’t Open Document")
-                    .font(.system(.title3, design: .rounded).weight(.semibold))
-                    .multilineTextAlignment(.center)
-
-                Text(message)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .accessibilityIdentifier("document-error-state")
     }
 }
 

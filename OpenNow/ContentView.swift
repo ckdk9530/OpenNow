@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Bindable var coordinator: AppLaunchCoordinator
+    let windowChromeController: any WindowChromeControlling
 
     var body: some View {
         NavigationSplitView {
@@ -27,13 +28,32 @@ struct ContentView: View {
         }
         .background(
             WindowObserver(
-                windowDidAttach: coordinator.configureWindow,
-                frameDidChange: coordinator.updateWindowFrame(window:frame:)
+                windowDidAttach: { window in
+                    windowChromeController.attach(window: window)
+                },
+                frameDidChange: { window, frame in
+                    windowChromeController.persistFrame(window: window, frame: frame)
+                }
             )
         )
     }
 }
 
 #Preview {
-    ContentView(coordinator: AppLaunchCoordinator())
+    let preferencesStore = PreferencesStore()
+    let windowChromeController = DefaultWindowChromeController(preferencesStore: preferencesStore)
+    let coordinator = AppLaunchCoordinator(
+        preferencesStore: preferencesStore,
+        documentAccessController: DocumentAccessController(),
+        markdownRenderer: MarkdownRenderer(),
+        fileWatcher: FileWatcher(),
+        panelPresenter: AppKitDocumentPanelPresenter(),
+        alertPresenter: AppKitDocumentAlertPresenter(),
+        windowChromeController: windowChromeController
+    )
+
+    return ContentView(
+        coordinator: coordinator,
+        windowChromeController: windowChromeController
+    )
 }

@@ -21,7 +21,6 @@ final class OpenNowUITests: XCTestCase {
         let detailPane = app.descendants(matching: .any).matching(identifier: "reader-detail-pane").firstMatch
         let window = app.windows.firstMatch
         let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
-        let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
         let loadingState = app.descendants(matching: .any).matching(identifier: "document-loading-state").firstMatch
         let openButton = app.buttons["Open Markdown…"]
 
@@ -34,7 +33,6 @@ final class OpenNowUITests: XCTestCase {
         XCTAssertGreaterThan(windowFrame.width, 700)
         XCTAssertGreaterThan(windowFrame.height, 500)
         XCTAssertFalse(documentHeader.exists)
-        XCTAssertFalse(errorState.exists)
         XCTAssertFalse(loadingState.exists)
     }
 
@@ -61,17 +59,21 @@ final class OpenNowUITests: XCTestCase {
     }
 
     @MainActor
-    func testStoredLastOpenIsIgnoredAtLaunch() throws {
+    func testStoredRecentFilesDoNotAutoOpenAtLaunch() throws {
         let suiteName = "OpenNowUITests-Restore-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.set(
             try JSONSerialization.data(
-                withJSONObject: [
+                withJSONObject: [[
                     "path": "/tmp/OpenNow-Missing-\(UUID().uuidString).md",
-                    "displayName": "Missing.md"
-                ]
+                    "displayName": "Missing.md",
+                    "fileBookmarkData": NSNull(),
+                    "directoryBookmarkData": NSNull(),
+                    "accessRootPath": NSNull(),
+                    "lastOpenedAt": 0
+                ]]
             ),
-            forKey: "lastOpen"
+            forKey: "recentFiles"
         )
 
         let app = XCUIApplication()
@@ -80,10 +82,10 @@ final class OpenNowUITests: XCTestCase {
         app.launch()
 
         let openButton = app.buttons["Open Markdown…"]
-        let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
+        let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
 
         XCTAssertTrue(openButton.waitForExistence(timeout: 5))
-        XCTAssertFalse(errorState.waitForExistence(timeout: 2))
+        XCTAssertFalse(documentHeader.exists)
     }
 
     @MainActor
@@ -102,12 +104,10 @@ final class OpenNowUITests: XCTestCase {
             NSPredicate(format: "identifier BEGINSWITH %@", "outline-item-")
         ).firstMatch
         let sidebarEmptyState = app.descendants(matching: .any).matching(identifier: "sidebar-empty-state").firstMatch
-        let errorState = app.descendants(matching: .any).matching(identifier: "document-error-state").firstMatch
 
         XCTAssertTrue(documentHeader.waitForExistence(timeout: 10))
         XCTAssertTrue(outlineItem.waitForExistence(timeout: 10))
         XCTAssertFalse(sidebarEmptyState.exists)
-        XCTAssertFalse(errorState.exists)
     }
 
     @MainActor

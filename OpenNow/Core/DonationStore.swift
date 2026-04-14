@@ -43,22 +43,22 @@ final class DonationStore {
     private static let featuredDefinitions = [
         DonationTier(
             id: "tip-1",
-            productID: "com.dahengchen.OpenNow.tip.1",
+            productID: "com.dahengchen.OpenNow.tip.small",
             fallbackAmount: 0.99,
             title: "Small",
             caption: "Entry amount."
         ),
         DonationTier(
             id: "tip-6",
-            productID: "com.dahengchen.OpenNow.tip.6",
-            fallbackAmount: 1.99,
+            productID: "com.dahengchen.OpenNow.tip.standard",
+            fallbackAmount: 2.99,
             title: "Standard",
             caption: "Default amount."
         ),
         DonationTier(
             id: "tip-9",
-            productID: "com.dahengchen.OpenNow.tip.9",
-            fallbackAmount: 2.99,
+            productID: "com.dahengchen.OpenNow.tip.generous",
+            fallbackAmount: 4.99,
             title: "Generous",
             caption: "Higher amount."
         )

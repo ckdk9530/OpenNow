@@ -1,45 +1,9 @@
-import AppKit
 import Foundation
 import OSLog
 import UniformTypeIdentifiers
 
 final class DocumentAccessController {
     private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "DocumentAccess")
-
-    func openPanelPickDocumentURL(startingDirectory: URL? = nil) -> URL? {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [.markdown]
-        panel.directoryURL = startingDirectory
-
-        guard panel.runModal() == .OK else {
-            return nil
-        }
-
-        return panel.url
-    }
-
-    func openPanelPickFolder(
-        suggestedDirectory: URL? = nil,
-        message: String? = nil
-    ) -> AuthorizedFolderEntry? {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.canCreateDirectories = false
-        panel.directoryURL = suggestedDirectory
-        panel.message = message ?? "Choose a folder tree to authorize. OpenNow will reuse this access for Markdown files and relative assets inside that folder and its subfolders."
-        panel.prompt = "Use Folder"
-
-        guard panel.runModal() == .OK, let folderURL = panel.url else {
-            return nil
-        }
-
-        return makeAuthorizedFolderEntry(for: folderURL)
-    }
 
     func inferredAuthorizationRoot(for fileURL: URL) -> URL {
         let standardizedFileURL = fileURL.standardizedFileURL
@@ -62,41 +26,6 @@ final class DocumentAccessController {
         }
 
         return documentDirectoryURL
-    }
-
-    func requestFolderTreeAccess(for fileURL: URL) -> AuthorizedFolderEntry? {
-        let standardizedFileURL = fileURL.standardizedFileURL
-        let preferredRootURL = inferredAuthorizationRoot(for: standardizedFileURL)
-
-        while true {
-            let message = """
-            Choose a durable access root for this Markdown file. OpenNow expects the tree root, not a nested child folder, so sibling images and future files under the same root keep working.
-            Suggested root: \(preferredRootURL.path)
-            """
-
-            guard let entry = openPanelPickFolder(
-                suggestedDirectory: preferredRootURL,
-                message: message
-            ) else {
-                return nil
-            }
-
-            let selectedRootURL = URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
-            if contains(preferredRootURL, within: selectedRootURL) {
-                return entry
-            }
-
-            let alert = NSAlert()
-            alert.alertStyle = .warning
-            alert.messageText = "Choose the suggested root or one of its parent folders."
-            alert.informativeText = "\(standardizedFileURL.lastPathComponent) should be authorized from \(preferredRootURL.path), not from a narrower child folder."
-            alert.addButton(withTitle: "Try Again")
-            alert.addButton(withTitle: "Cancel")
-
-            guard alert.runModal() == .alertFirstButtonReturn else {
-                return nil
-            }
-        }
     }
 
     func prepareAccess(
@@ -207,6 +136,11 @@ final class DocumentAccessController {
             "startAccess file=\(fileURL.path, privacy: .public) accessRoot=\(accessRootURL.path, privacy: .public) accessRootGranted=\(session.accessRootGranted) fileGranted=\(session.fileAccessGranted)"
         )
         return session
+    }
+
+    func isAuthorizedRootSelection(_ selectedRootURL: URL, validFor fileURL: URL) -> Bool {
+        let preferredRootURL = inferredAuthorizationRoot(for: fileURL.standardizedFileURL)
+        return contains(preferredRootURL, within: selectedRootURL.standardizedFileURL)
     }
 
     func documentContainsRelativeImages(at fileURL: URL) -> Bool {

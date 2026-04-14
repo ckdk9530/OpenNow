@@ -15,12 +15,12 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.dahengchen.OpenNow.tip.1",
-      "referenceName" : "OpenNow Support Small",
+      "productID" : "com.dahengchen.OpenNow.tip.small",
+      "referenceName" : "OpenNow Tip Small",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "1.99",
+      "displayPrice" : "2.99",
       "familyShareable" : false,
       "internalID" : "TIP00006",
       "localizations" : [
@@ -30,12 +30,12 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.dahengchen.OpenNow.tip.6",
-      "referenceName" : "OpenNow Support Standard",
+      "productID" : "com.dahengchen.OpenNow.tip.standard",
+      "referenceName" : "OpenNow Tip Standard",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "2.99",
+      "displayPrice" : "4.99",
       "familyShareable" : false,
       "internalID" : "TIP00009",
       "localizations" : [
@@ -45,8 +45,8 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.dahengchen.OpenNow.tip.9",
-      "referenceName" : "OpenNow Support Generous",
+      "productID" : "com.dahengchen.OpenNow.tip.generous",
+      "referenceName" : "OpenNow Tip Generous",
       "type" : "Consumable"
     }
   ],

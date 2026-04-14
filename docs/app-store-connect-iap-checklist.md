@@ -5,31 +5,31 @@
 - Bundle ID: `com.dahengchen.OpenNow`
 - IAP type for all three products: `Consumable`
 - StoreKit product IDs:
-  - `com.dahengchen.OpenNow.tip.1`
-  - `com.dahengchen.OpenNow.tip.6`
-  - `com.dahengchen.OpenNow.tip.9`
+  - `com.dahengchen.OpenNow.tip.small`
+  - `com.dahengchen.OpenNow.tip.standard`
+  - `com.dahengchen.OpenNow.tip.generous`
 
 ## Exact Product Metadata
 ### 1. Small
-- Reference Name: `OpenNow Support Small`
-- Product ID: `com.dahengchen.OpenNow.tip.1`
+- Reference Name: `OpenNow Tip Small`
+- Product ID: `com.dahengchen.OpenNow.tip.small`
 - Display Name: `Small`
 - Description: `One-time support purchase for OpenNow. No features are unlocked.`
 - Price: base storefront `United States`, price `0.99 USD`
 
 ### 2. Standard
-- Reference Name: `OpenNow Support Standard`
-- Product ID: `com.dahengchen.OpenNow.tip.6`
+- Reference Name: `OpenNow Tip Standard`
+- Product ID: `com.dahengchen.OpenNow.tip.standard`
 - Display Name: `Standard`
 - Description: `One-time support purchase for OpenNow. No features are unlocked.`
-- Price: base storefront `United States`, price `1.99 USD`
+- Price: base storefront `United States`, price `2.99 USD`
 
 ### 3. Generous
-- Reference Name: `OpenNow Support Generous`
-- Product ID: `com.dahengchen.OpenNow.tip.9`
+- Reference Name: `OpenNow Tip Generous`
+- Product ID: `com.dahengchen.OpenNow.tip.generous`
 - Display Name: `Generous`
 - Description: `One-time support purchase for OpenNow. No features are unlocked.`
-- Price: base storefront `United States`, price `2.99 USD`
+- Price: base storefront `United States`, price `4.99 USD`
 
 ## Review Note
 Use the same review note on all three IAPs:

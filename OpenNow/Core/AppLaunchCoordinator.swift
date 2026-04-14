@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Observation
 import OSLog
@@ -21,18 +20,29 @@ final class AppLaunchCoordinator {
                 false
             }
         }
+
+        var allowsOpenMarkdownPanelOnFailure: Bool {
+            switch self {
+            case .recent, .reload:
+                true
+            case .launch, .panel, .external:
+                false
+            }
+        }
     }
 
     private let preferencesStore: PreferencesStore
     private let documentAccessController: DocumentAccessController
     private let markdownRenderer: MarkdownRenderer
     private let fileWatcher: FileWatcher
+    private let panelPresenter: any DocumentPanelPresenting
+    private let alertPresenter: any DocumentAlertPresenting
+    private let windowChromeController: any WindowChromeControlling
     private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "Launch")
 
     let webBridge = ReaderWebBridge()
 
     var activeDocument: OpenedDocument?
-    var loadErrorMessage: String?
     var isLoadingDocument = false
     var recentFiles: [RecentFileEntry]
     var authorizedFolders: [AuthorizedFolderEntry]
@@ -44,28 +54,23 @@ final class AppLaunchCoordinator {
     private var currentFileModificationDate: Date?
     private var loadTask: Task<Void, Never>?
     private var hasStarted = false
-    private var hasRestoredWindowFrame = false
-    private weak var attachedWindow: NSWindow?
-
-    convenience init() {
-        self.init(
-            preferencesStore: PreferencesStore(),
-            documentAccessController: DocumentAccessController(),
-            markdownRenderer: MarkdownRenderer(),
-            fileWatcher: FileWatcher()
-        )
-    }
 
     init(
         preferencesStore: PreferencesStore,
         documentAccessController: DocumentAccessController,
         markdownRenderer: MarkdownRenderer,
-        fileWatcher: FileWatcher
+        fileWatcher: FileWatcher,
+        panelPresenter: any DocumentPanelPresenting,
+        alertPresenter: any DocumentAlertPresenting,
+        windowChromeController: any WindowChromeControlling
     ) {
         self.preferencesStore = preferencesStore
         self.documentAccessController = documentAccessController
         self.markdownRenderer = markdownRenderer
         self.fileWatcher = fileWatcher
+        self.panelPresenter = panelPresenter
+        self.alertPresenter = alertPresenter
+        self.windowChromeController = windowChromeController
         self.recentFiles = []
         self.authorizedFolders = []
         self.readerFontScale = 1.0
@@ -84,9 +89,8 @@ final class AppLaunchCoordinator {
         recentFiles = preferencesStore.loadRecentFiles()
         authorizedFolders = preferencesStore.loadAuthorizedFolders()
         readerFontScale = preferencesStore.loadReaderFontScale()
-        preferencesStore.clearSystemWindowAutosaveArtifacts()
-        restoreWindowFrameIfPossible()
         webBridge.setFontScale(readerFontScale)
+        windowChromeController.apply(document: activeDocument)
 
         if let testFileURL = RuntimeEnvironment.launchTestDocumentURL() {
             open(
@@ -97,12 +101,11 @@ final class AppLaunchCoordinator {
                 source: .external,
                 updateRecentFiles: false
             )
-            return
         }
     }
 
     func openDocumentFromPanel() {
-        guard let url = documentAccessController.openPanelPickDocumentURL(startingDirectory: activeDocument?.directoryURL) else {
+        guard let url = panelPresenter.pickDocumentURL(startingDirectory: activeDocument?.directoryURL) else {
             return
         }
 
@@ -171,7 +174,6 @@ final class AppLaunchCoordinator {
     func closeCurrentFile() {
         cancelPendingLoad()
         isLoadingDocument = false
-        loadErrorMessage = nil
         selectedAnchor = nil
         activeDocument = nil
         currentDescriptor = nil
@@ -180,23 +182,24 @@ final class AppLaunchCoordinator {
         currentAccessSession?.stop()
         currentAccessSession = nil
         ReaderAssetSecurityScopeStore.shared.clear()
-        updateWindowChrome()
+        windowChromeController.apply(document: nil)
     }
 
     func addAuthorizedFolderFromPanel() {
         let suggestedDirectory = activeDocument?.directoryURL
             ?? authorizedFolders.first.map { URL(fileURLWithPath: $0.path, isDirectory: true) }
             ?? FileManager.default.homeDirectoryForCurrentUser
-
         let message = "Choose a durable root folder to authorize. OpenNow will reuse access for Markdown files and relative assets inside that folder tree."
-        guard let folder = documentAccessController.openPanelPickFolder(
+
+        guard let folderURL = panelPresenter.pickFolderURL(
             suggestedDirectory: suggestedDirectory,
-            message: message
+            message: message,
+            prompt: "Use Folder"
         ) else {
             return
         }
 
-        saveAuthorizedFolder(folder)
+        saveAuthorizedFolder(documentAccessController.makeAuthorizedFolderEntry(for: folderURL))
     }
 
     func removeAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
@@ -204,27 +207,14 @@ final class AppLaunchCoordinator {
         authorizedFolders = preferencesStore.loadAuthorizedFolders()
     }
 
-    func configureWindow(_ window: NSWindow) {
-        attachedWindow = window
-        window.minSize = NSSize(width: 620, height: 420)
-        updateWindowChrome()
-    }
-
-    func updateWindowFrame(window: NSWindow, frame: CGRect) {
-        guard shouldPersistWindowFrame(window: window) else {
-            return
-        }
-
-        preferencesStore.saveWindowFrame(frame)
-    }
-
     private func openDocument(at url: URL, source: OpenRequestSource) {
         logger.notice("openDocument source=\(String(describing: source), privacy: .public) file=\(url.path, privacy: .public)")
+
         if RuntimeEnvironment.isRunningUnderXCTest() == false,
            source.shouldPromptForFolderTreeAccess,
            documentAccessController.authorizedFolder(containing: url, authorizedFolders: authorizedFolders) == nil,
            documentAccessController.documentContainsRelativeImages(at: url),
-           let folder = promptForFolderTreeAccess(for: url) {
+           let folder = requestFolderTreeAccess(for: url) {
             saveAuthorizedFolder(folder)
         }
 
@@ -233,6 +223,41 @@ final class AppLaunchCoordinator {
             source: source,
             updateRecentFiles: true
         )
+    }
+
+    private func requestFolderTreeAccess(for fileURL: URL) -> AuthorizedFolderEntry? {
+        let preferredRootURL = documentAccessController.inferredAuthorizationRoot(for: fileURL)
+
+        guard alertPresenter.confirmFolderTreeAccess(for: fileURL, preferredRootURL: preferredRootURL) else {
+            return nil
+        }
+
+        let message = """
+        Choose a durable access root for this Markdown file. OpenNow expects the tree root, not a nested child folder, so sibling images and future files under the same root keep working.
+        Suggested root: \(preferredRootURL.path)
+        """
+
+        while true {
+            guard let folderURL = panelPresenter.pickFolderURL(
+                suggestedDirectory: preferredRootURL,
+                message: message,
+                prompt: "Use Folder"
+            ) else {
+                return nil
+            }
+
+            if documentAccessController.isAuthorizedRootSelection(folderURL, validFor: fileURL) {
+                return documentAccessController.makeAuthorizedFolderEntry(for: folderURL)
+            }
+
+            guard alertPresenter.retryFolderTreeAccessSelection(
+                selectedRootURL: folderURL,
+                preferredRootURL: preferredRootURL,
+                fileURL: fileURL
+            ) else {
+                return nil
+            }
+        }
     }
 
     private func open(
@@ -245,7 +270,6 @@ final class AppLaunchCoordinator {
         )
         cancelPendingLoad()
         isLoadingDocument = true
-        loadErrorMessage = nil
         selectedAnchor = nil
 
         currentAccessSession?.stop()
@@ -270,9 +294,8 @@ final class AppLaunchCoordinator {
                 self.activeDocument = loadedDocument
                 self.currentFileModificationDate = loadedDocument.lastKnownModificationDate
                 self.isLoadingDocument = false
-                self.loadErrorMessage = nil
                 self.webBridge.setFontScale(self.readerFontScale)
-                self.updateWindowChrome()
+                self.windowChromeController.apply(document: loadedDocument)
 
                 if updateRecentFiles {
                     self.preferencesStore.saveRecentFile(descriptor.recentEntry)
@@ -301,26 +324,29 @@ final class AppLaunchCoordinator {
                 self.currentAccessSession?.stop()
                 self.currentAccessSession = nil
                 ReaderAssetSecurityScopeStore.shared.clear()
-                self.updateWindowChrome()
+                self.windowChromeController.apply(document: nil)
 
-                if source == .launch {
-                    self.loadErrorMessage = nil
+                guard source != .launch else {
                     return
                 }
 
-                self.loadErrorMessage = nil
-                self.presentLoadFailureAlert(message: message, source: source)
+                let action = self.alertPresenter.presentLoadFailure(
+                    message: message,
+                    allowsOpenMarkdownPanel: source.allowsOpenMarkdownPanelOnFailure
+                )
+
+                if action == .openMarkdownPanel {
+                    self.openDocumentFromPanel()
+                }
             }
         }
     }
 
     private func loadDocument(using descriptor: DocumentAccessDescriptor) async throws -> OpenedDocument {
         let markdownRenderer = self.markdownRenderer
-        let loadedDocument = try await Task.detached(priority: .userInitiated) { [markdownRenderer] in
+        return try await Task.detached(priority: .userInitiated) { [markdownRenderer] in
             try Self.readDocument(descriptor: descriptor, markdownRenderer: markdownRenderer)
         }.value
-
-        return loadedDocument
     }
 
     nonisolated private static func readDocument(
@@ -366,97 +392,6 @@ final class AppLaunchCoordinator {
         )
     }
 
-    private func restoreWindowFrameIfPossible() {
-        guard hasRestoredWindowFrame == false else {
-            return
-        }
-
-        guard let frame = preferencesStore.loadWindowFrame(),
-              let window = NSApplication.shared.windows.first
-        else {
-            return
-        }
-
-        guard let sanitizedFrame = sanitizedWindowFrame(frame, for: window) else {
-            preferencesStore.clearWindowFrame()
-            return
-        }
-
-        hasRestoredWindowFrame = true
-
-        if sanitizedFrame.equalTo(frame) == false {
-            preferencesStore.saveWindowFrame(sanitizedFrame)
-        }
-
-        window.setFrame(sanitizedFrame, display: true)
-    }
-
-    private func sanitizedWindowFrame(_ frame: CGRect, for window: NSWindow) -> CGRect? {
-        guard frame.origin.x.isFinite,
-              frame.origin.y.isFinite,
-              frame.size.width.isFinite,
-              frame.size.height.isFinite,
-              frame.width > 0,
-              frame.height > 0
-        else {
-            return nil
-        }
-
-        let visibleFrame = window.screen?.visibleFrame
-            ?? NSScreen.main?.visibleFrame
-            ?? NSScreen.screens.first?.visibleFrame
-            ?? frame
-
-        let minWidth: CGFloat = 620
-        let minHeight: CGFloat = 420
-        let maxWidth = max(minWidth, visibleFrame.width * 0.94)
-        let maxHeight = max(minHeight, visibleFrame.height * 0.82)
-        let width = min(max(frame.width, minWidth), maxWidth)
-        let height = min(max(frame.height, minHeight), maxHeight)
-        let maxX = visibleFrame.maxX - width
-        let maxY = visibleFrame.maxY - height
-        var x = min(max(frame.minX, visibleFrame.minX), maxX)
-        var y = min(max(frame.minY, visibleFrame.minY), maxY)
-
-        if frame.width > maxWidth {
-            x = visibleFrame.minX + (visibleFrame.width - width) / 2
-        }
-
-        if frame.height > maxHeight {
-            y = visibleFrame.minY + (visibleFrame.height - height) / 2
-        }
-
-        return CGRect(x: x, y: y, width: width, height: height)
-    }
-
-    private func shouldPersistWindowFrame(window: NSWindow) -> Bool {
-        guard window.isMiniaturized == false else {
-            return false
-        }
-
-        if window.styleMask.contains(.fullScreen) || window.isZoomed {
-            return false
-        }
-
-        return true
-    }
-
-    private func promptForFolderTreeAccess(for fileURL: URL) -> AuthorizedFolderEntry? {
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = "Authorize a Folder Tree?"
-        let preferredRootURL = documentAccessController.inferredAuthorizationRoot(for: fileURL)
-        alert.informativeText = "This Markdown file references relative assets. OpenNow needs a durable root-folder bookmark so sibling images and future files in the same tree keep working. Suggested root: \(preferredRootURL.path)"
-        alert.addButton(withTitle: "Authorize Root…")
-        alert.addButton(withTitle: "Open File Only")
-
-        guard alert.runModal() == .alertFirstButtonReturn else {
-            return nil
-        }
-
-        return documentAccessController.requestFolderTreeAccess(for: fileURL)
-    }
-
     private func saveAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
         preferencesStore.saveAuthorizedFolder(entry)
         authorizedFolders = preferencesStore.loadAuthorizedFolders()
@@ -467,43 +402,6 @@ final class AppLaunchCoordinator {
         readerFontScale = clampedScale
         preferencesStore.saveReaderFontScale(clampedScale)
         webBridge.setFontScale(clampedScale)
-    }
-
-    private func updateWindowChrome() {
-        guard let window = attachedWindow else {
-            return
-        }
-
-        if let document = activeDocument {
-            window.title = document.url.lastPathComponent
-            window.subtitle = document.directoryURL.path
-            window.representedURL = document.url
-        } else {
-            window.title = "OpenNow"
-            window.subtitle = ""
-            window.representedURL = nil
-        }
-    }
-
-    private func presentLoadFailureAlert(message: String, source: OpenRequestSource) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = "Couldn’t Open Document"
-        alert.informativeText = message
-
-        if source == .recent || source == .reload {
-            alert.addButton(withTitle: "Open Markdown…")
-            alert.addButton(withTitle: "OK")
-
-            if alert.runModal() == .alertFirstButtonReturn {
-                openDocumentFromPanel()
-            }
-
-            return
-        }
-
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
     }
 
     private static func makeLoadErrorMessage(
@@ -520,5 +418,4 @@ final class AppLaunchCoordinator {
 
         return "Failed to open \(descriptor.fileURL.lastPathComponent): \(error.localizedDescription)"
     }
-
 }

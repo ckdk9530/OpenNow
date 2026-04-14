@@ -3,11 +3,32 @@ import SwiftUI
 @main
 struct OpenNowApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var coordinator = AppLaunchCoordinator()
+    @State private var coordinator: AppLaunchCoordinator
+    @State private var windowChromeController: DefaultWindowChromeController
+
+    init() {
+        let preferencesStore = PreferencesStore()
+        let windowChromeController = DefaultWindowChromeController(preferencesStore: preferencesStore)
+        let coordinator = AppLaunchCoordinator(
+            preferencesStore: preferencesStore,
+            documentAccessController: DocumentAccessController(),
+            markdownRenderer: MarkdownRenderer(),
+            fileWatcher: FileWatcher(),
+            panelPresenter: AppKitDocumentPanelPresenter(),
+            alertPresenter: AppKitDocumentAlertPresenter(),
+            windowChromeController: windowChromeController
+        )
+
+        _windowChromeController = State(initialValue: windowChromeController)
+        _coordinator = State(initialValue: coordinator)
+    }
 
     var body: some Scene {
         Window("OpenNow", id: "main") {
-            ContentView(coordinator: coordinator)
+            ContentView(
+                coordinator: coordinator,
+                windowChromeController: windowChromeController
+            )
                 .task {
                     RuntimeEnvironment.writeLaunchDiagnostics()
                     let pendingLaunchURLs = appDelegate.drainPendingURLs()

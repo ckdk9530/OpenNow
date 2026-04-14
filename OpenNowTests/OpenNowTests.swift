@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import OpenNow
@@ -250,6 +251,93 @@ struct OpenNowTests {
         #expect(descriptor.accessRootURL?.path == authorizedFolder.path)
     }
 
+    @Test @MainActor func coordinatorPromptsForFolderTreeAccessAndPersistsAuthorization() async throws {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let preferencesStore = PreferencesStore(defaults: defaults)
+        let documentAccessController = DocumentAccessController()
+        let panelPresenter = MockDocumentPanelPresenter()
+        let alertPresenter = MockDocumentAlertPresenter()
+        let windowChromeController = MockWindowChromeController()
+        let coordinator = AppLaunchCoordinator(
+            preferencesStore: preferencesStore,
+            documentAccessController: documentAccessController,
+            markdownRenderer: MarkdownRenderer(),
+            fileWatcher: FileWatcher(),
+            panelPresenter: panelPresenter,
+            alertPresenter: alertPresenter,
+            windowChromeController: windowChromeController
+        )
+        let markdownURL = try makeMarkdownFixture(
+            named: "RelativeAssets.md",
+            contents: """
+            # Fixture
+
+            ![Diagram](./diagram.png)
+            """
+        )
+        let preferredRootURL = documentAccessController.inferredAuthorizationRoot(for: markdownURL)
+        panelPresenter.folderURLs = [preferredRootURL]
+        alertPresenter.confirmFolderTreeAccessResult = true
+
+        coordinator.start()
+        coordinator.openDocument(at: markdownURL)
+
+        #expect(alertPresenter.confirmFolderTreeAccessCallCount == 1)
+        #expect(panelPresenter.folderPickCallCount == 1)
+        #expect(coordinator.authorizedFolders.first?.path == preferredRootURL.path)
+        coordinator.closeCurrentFile()
+    }
+
+    @Test @MainActor func coordinatorOffersOpenPanelAfterRecentOpenFailure() async throws {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let preferencesStore = PreferencesStore(defaults: defaults)
+        let documentAccessController = DocumentAccessController()
+        let panelPresenter = MockDocumentPanelPresenter()
+        let alertPresenter = MockDocumentAlertPresenter()
+        let windowChromeController = MockWindowChromeController()
+        let coordinator = AppLaunchCoordinator(
+            preferencesStore: preferencesStore,
+            documentAccessController: documentAccessController,
+            markdownRenderer: MarkdownRenderer(),
+            fileWatcher: FileWatcher(),
+            panelPresenter: panelPresenter,
+            alertPresenter: alertPresenter,
+            windowChromeController: windowChromeController
+        )
+        let retryDocumentURL = try makeMarkdownFixture(
+            named: "Recovered.md",
+            contents: """
+            # Recovered
+
+            Body
+            """
+        )
+        let missingEntry = RecentFileEntry(
+            path: "/tmp/OpenNow-Missing-\(UUID().uuidString).md",
+            displayName: "Missing.md",
+            fileBookmarkData: nil,
+            directoryBookmarkData: nil,
+            accessRootPath: nil,
+            lastOpenedAt: .distantPast
+        )
+        panelPresenter.documentURLs = [retryDocumentURL]
+        alertPresenter.loadFailureActions = [.openMarkdownPanel]
+
+        coordinator.start()
+        coordinator.openRecent(missingEntry)
+        await waitUntil {
+            panelPresenter.documentPickCallCount == 1
+        }
+        await waitUntil {
+            coordinator.activeDocument?.url == retryDocumentURL
+        }
+
+        #expect(alertPresenter.loadFailureCallCount == 1)
+        #expect(alertPresenter.lastAllowsOpenMarkdownPanel == true)
+        #expect(panelPresenter.documentPickCallCount == 1)
+        coordinator.closeCurrentFile()
+    }
+
     @Test func runtimeEnvironmentIgnoresOpenNowHooksOutsideXCTest() {
         let environment = [
             "OPENNOW_DEFAULTS_SUITE": "OpenNowManual",
@@ -323,4 +411,113 @@ struct OpenNowTests {
         #expect(diagnostics.relevantEnvironment["XCInjectBundleInto"] == "/Applications/OpenNow.app/Contents/MacOS/OpenNow")
         #expect(diagnostics.relevantEnvironment["UNRELATED"] == nil)
     }
+}
+
+@MainActor
+private final class MockDocumentPanelPresenter: DocumentPanelPresenting {
+    var documentURLs: [URL?] = []
+    var folderURLs: [URL?] = []
+    private(set) var documentPickCallCount = 0
+    private(set) var folderPickCallCount = 0
+
+    func pickDocumentURL(startingDirectory: URL?) -> URL? {
+        documentPickCallCount += 1
+        if documentURLs.isEmpty {
+            return nil
+        }
+
+        return documentURLs.removeFirst()
+    }
+
+    func pickFolderURL(
+        suggestedDirectory: URL?,
+        message: String,
+        prompt: String
+    ) -> URL? {
+        folderPickCallCount += 1
+        if folderURLs.isEmpty {
+            return nil
+        }
+
+        return folderURLs.removeFirst()
+    }
+}
+
+@MainActor
+private final class MockDocumentAlertPresenter: DocumentAlertPresenting {
+    var confirmFolderTreeAccessResult = false
+    var retryFolderTreeAccessResults: [Bool] = []
+    var loadFailureActions: [LoadFailureAlertAction] = []
+    private(set) var confirmFolderTreeAccessCallCount = 0
+    private(set) var retryFolderTreeAccessCallCount = 0
+    private(set) var loadFailureCallCount = 0
+    private(set) var lastAllowsOpenMarkdownPanel = false
+
+    func confirmFolderTreeAccess(for fileURL: URL, preferredRootURL: URL) -> Bool {
+        confirmFolderTreeAccessCallCount += 1
+        return confirmFolderTreeAccessResult
+    }
+
+    func retryFolderTreeAccessSelection(
+        selectedRootURL: URL,
+        preferredRootURL: URL,
+        fileURL: URL
+    ) -> Bool {
+        retryFolderTreeAccessCallCount += 1
+        if retryFolderTreeAccessResults.isEmpty {
+            return false
+        }
+
+        return retryFolderTreeAccessResults.removeFirst()
+    }
+
+    func presentLoadFailure(
+        message: String,
+        allowsOpenMarkdownPanel: Bool
+    ) -> LoadFailureAlertAction {
+        loadFailureCallCount += 1
+        lastAllowsOpenMarkdownPanel = allowsOpenMarkdownPanel
+        if loadFailureActions.isEmpty {
+            return .dismiss
+        }
+
+        return loadFailureActions.removeFirst()
+    }
+}
+
+@MainActor
+private final class MockWindowChromeController: WindowChromeControlling {
+    private(set) var appliedDocumentURLs: [URL?] = []
+
+    func attach(window: NSWindow) {}
+
+    func persistFrame(window: NSWindow, frame: CGRect) {}
+
+    func apply(document: OpenedDocument?) {
+        appliedDocumentURLs.append(document?.url)
+    }
+}
+
+private func makeMarkdownFixture(named filename: String, contents: String) throws -> URL {
+    let rootURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        .appendingPathComponent("OpenNowTests-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+
+    let markdownURL = rootURL.appendingPathComponent(filename)
+    try contents.write(to: markdownURL, atomically: true, encoding: .utf8)
+    return markdownURL
+}
+
+@MainActor
+private func waitUntil(
+    timeoutNanoseconds: UInt64 = 2_000_000_000,
+    pollIntervalNanoseconds: UInt64 = 50_000_000,
+    condition: @escaping @MainActor () -> Bool
+) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+    while condition() == false, DispatchTime.now().uptimeNanoseconds < deadline {
+        try? await Task.sleep(nanoseconds: pollIntervalNanoseconds)
+    }
+
+    #expect(condition())
 }
