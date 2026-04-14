@@ -87,7 +87,7 @@ final class AppLaunchCoordinator {
         restoreWindowFrameIfPossible()
         webBridge.setFontScale(readerFontScale)
 
-        if let testFileURL = RuntimeEnvironment.launchTestFileURL() {
+        if let testFileURL = RuntimeEnvironment.launchTestDocumentURL() {
             open(
                 descriptor: documentAccessController.prepareAccess(
                     for: testFileURL,

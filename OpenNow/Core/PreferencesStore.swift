@@ -3,8 +3,11 @@ import Foundation
 
 enum RuntimeEnvironment {
     nonisolated private static var xctestConfigurationKey: String { "XCTestConfigurationFilePath" }
+    nonisolated private static var testHooksKey: String { "OPENNOW_ENABLE_TEST_HOOKS" }
     nonisolated private static var defaultsSuiteKey: String { "OPENNOW_DEFAULTS_SUITE" }
     nonisolated private static var testFileKey: String { "OPENNOW_TEST_FILE" }
+    nonisolated private static var testMarkdownKey: String { "OPENNOW_TEST_MARKDOWN" }
+    nonisolated private static var testFilenameKey: String { "OPENNOW_TEST_FILENAME" }
     nonisolated private static var xcInjectBundleKey: String { "XCInjectBundle" }
     nonisolated private static var xcInjectBundleIntoKey: String { "XCInjectBundleInto" }
     nonisolated private static var dyldInsertLibrariesKey: String { "DYLD_INSERT_LIBRARIES" }
@@ -21,8 +24,11 @@ enum RuntimeEnvironment {
 
     nonisolated private static let relevantEnvironmentKeys = [
         xctestConfigurationKey,
+        testHooksKey,
         defaultsSuiteKey,
         testFileKey,
+        testMarkdownKey,
+        testFilenameKey,
         xcInjectBundleKey,
         xcInjectBundleIntoKey,
         dyldInsertLibrariesKey,
@@ -35,11 +41,11 @@ enum RuntimeEnvironment {
     }
 
     nonisolated static func isRunningUnderXCTest(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
-        guard let value = environment[xctestConfigurationKey] else {
-            return false
+        if let value = environment[xctestConfigurationKey], value.isEmpty == false {
+            return true
         }
 
-        return value.isEmpty == false
+        return environment[testHooksKey] == "1"
     }
 
     nonisolated static func defaultsSuiteName(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
@@ -64,6 +70,49 @@ enum RuntimeEnvironment {
         }
 
         return URL(fileURLWithPath: path)
+    }
+
+    nonisolated static func launchTestMarkdown(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        guard isRunningUnderXCTest(environment) else {
+            return nil
+        }
+
+        guard let markdown = environment[testMarkdownKey], markdown.isEmpty == false else {
+            return nil
+        }
+
+        return markdown
+    }
+
+    nonisolated static func launchTestFilename(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        guard isRunningUnderXCTest(environment) else {
+            return nil
+        }
+
+        guard let filename = environment[testFilenameKey], filename.isEmpty == false else {
+            return nil
+        }
+
+        return filename
+    }
+
+    nonisolated static func launchTestDocumentURL(
+        _ environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> URL? {
+        if let markdown = launchTestMarkdown(environment) {
+            let filename = launchTestFilename(environment) ?? "OpenNowUITest.md"
+            let url = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+                .appendingPathComponent(filename)
+
+            do {
+                try markdown.write(to: url, atomically: true, encoding: .utf8)
+                return url
+            } catch {
+                return nil
+            }
+        }
+
+        return launchTestFileURL(environment)
     }
 
     nonisolated static func makeLaunchDiagnostics(

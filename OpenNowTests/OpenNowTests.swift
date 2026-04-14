@@ -273,6 +273,32 @@ struct OpenNowTests {
         #expect(RuntimeEnvironment.launchTestFileURL(environment)?.path == "/tmp/fixture.md")
     }
 
+    @Test func runtimeEnvironmentExposesOpenNowHooksWithExplicitOptIn() {
+        let environment = [
+            "OPENNOW_ENABLE_TEST_HOOKS": "1",
+            "OPENNOW_DEFAULTS_SUITE": "OpenNowUITests",
+            "OPENNOW_TEST_MARKDOWN": "# Fixture"
+        ]
+
+        #expect(RuntimeEnvironment.isRunningUnderXCTest(environment))
+        #expect(RuntimeEnvironment.defaultsSuiteName(environment) == "OpenNowUITests")
+        #expect(RuntimeEnvironment.launchTestMarkdown(environment) == "# Fixture")
+    }
+
+    @Test func runtimeEnvironmentMaterializesLaunchMarkdownInsideProcessTempDirectory() throws {
+        let environment = [
+            "XCTestConfigurationFilePath": "/tmp/session.xctestconfiguration",
+            "OPENNOW_TEST_MARKDOWN": "# Fixture\n\nBody",
+            "OPENNOW_TEST_FILENAME": "LaunchFixture.md"
+        ]
+
+        let url = try #require(RuntimeEnvironment.launchTestDocumentURL(environment))
+        let contents = try String(contentsOf: url, encoding: .utf8)
+
+        #expect(url.lastPathComponent == "LaunchFixture.md")
+        #expect(contents == "# Fixture\n\nBody")
+    }
+
     @Test func runtimeEnvironmentDiagnosticsCaptureOnlyRelevantTestSignals() {
         let environment = [
             "XCTestConfigurationFilePath": "/tmp/session.xctestconfiguration",

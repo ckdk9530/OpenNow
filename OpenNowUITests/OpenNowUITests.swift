@@ -2,8 +2,11 @@ import XCTest
 
 final class OpenNowUITests: XCTestCase {
     private enum LaunchEnvironmentKey {
+        static let enableTestHooks = "OPENNOW_ENABLE_TEST_HOOKS"
         static let defaultsSuite = "OPENNOW_DEFAULTS_SUITE"
         static let testFile = "OPENNOW_TEST_FILE"
+        static let testMarkdown = "OPENNOW_TEST_MARKDOWN"
+        static let testFilename = "OPENNOW_TEST_FILENAME"
     }
 
     override func setUpWithError() throws {
@@ -37,15 +40,13 @@ final class OpenNowUITests: XCTestCase {
 
     @MainActor
     func testOpensMarkdownFileFromLaunchEnvironment() throws {
-        let temporaryURL = FileManager.default.temporaryDirectory.appendingPathComponent("OpenNowUITest.md")
-        try """
+        let app = makeApp()
+        app.launchEnvironment[LaunchEnvironmentKey.testMarkdown] = """
         # UI Test Title
 
         Body
-        """.write(to: temporaryURL, atomically: true, encoding: .utf8)
-
-        let app = makeApp()
-        app.launchEnvironment[LaunchEnvironmentKey.testFile] = temporaryURL.path
+        """
+        app.launchEnvironment[LaunchEnvironmentKey.testFilename] = "OpenNowUITest.md"
         app.launch()
 
         let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
@@ -87,13 +88,13 @@ final class OpenNowUITests: XCTestCase {
 
     @MainActor
     func testComplexFixtureRendersBodyContent() throws {
-        let fixturePath = repositoryRootURL()
+        let fixtureURL = repositoryRootURL()
             .appendingPathComponent("docs/render-fixtures/complex-render-fixture.md")
-            .path
-        XCTAssertTrue(FileManager.default.fileExists(atPath: fixturePath))
+        let fixtureMarkdown = try String(contentsOf: fixtureURL, encoding: .utf8)
 
         let app = makeApp()
-        app.launchEnvironment[LaunchEnvironmentKey.testFile] = fixturePath
+        app.launchEnvironment[LaunchEnvironmentKey.testMarkdown] = fixtureMarkdown
+        app.launchEnvironment[LaunchEnvironmentKey.testFilename] = "complex-render-fixture.md"
         app.launch()
 
         let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
@@ -111,8 +112,8 @@ final class OpenNowUITests: XCTestCase {
 
     @MainActor
     func testDocumentLayoutKeepsSidebarHeaderAndReaderSeparated() throws {
-        let temporaryURL = FileManager.default.temporaryDirectory.appendingPathComponent("OpenNowUILayout.md")
-        try """
+        let app = makeApp()
+        app.launchEnvironment[LaunchEnvironmentKey.testMarkdown] = """
         # Layout Title
 
         ## Overview
@@ -132,13 +133,13 @@ final class OpenNowUITests: XCTestCase {
         let message = "OpenNow layout smoke test"
         print(message)
         ```
-        """.write(to: temporaryURL, atomically: true, encoding: .utf8)
-
-        let app = makeApp()
-        app.launchEnvironment[LaunchEnvironmentKey.testFile] = temporaryURL.path
+        """
+        app.launchEnvironment[LaunchEnvironmentKey.testFilename] = "OpenNowUILayout.md"
         app.launch()
 
         let detailPane = app.descendants(matching: .any).matching(identifier: "reader-detail-pane").firstMatch
+        let sidebarPane = app.descendants(matching: .any).matching(identifier: "sidebar-pane").firstMatch
+        let documentHeader = app.descendants(matching: .any).matching(identifier: "document-header").firstMatch
         let outlineButton = app.buttons.matching(
             NSPredicate(format: "identifier BEGINSWITH %@", "outline-item-")
         ).firstMatch
@@ -146,16 +147,20 @@ final class OpenNowUITests: XCTestCase {
 
         XCTAssertTrue(window.waitForExistence(timeout: 5))
         XCTAssertTrue(detailPane.waitForExistence(timeout: 10))
+        XCTAssertTrue(sidebarPane.waitForExistence(timeout: 10))
+        XCTAssertTrue(documentHeader.waitForExistence(timeout: 10))
         XCTAssertTrue(outlineButton.waitForExistence(timeout: 10))
 
         let windowFrame = window.frame
+        let sidebarFrame = sidebarPane.frame
         let detailFrame = detailPane.frame
         let outlineFrame = outlineButton.frame
-
         XCTAssertGreaterThan(windowFrame.width, 700)
+        XCTAssertGreaterThan(sidebarFrame.width, 180)
         XCTAssertGreaterThan(detailFrame.width, windowFrame.width * 0.5)
         XCTAssertGreaterThan(outlineFrame.width, 75)
-        XCTAssertLessThan(outlineFrame.height, 32)
+        XCTAssertGreaterThan(detailFrame.width, sidebarFrame.width * 1.8)
+        XCTAssertLessThanOrEqual(outlineFrame.maxX, sidebarFrame.maxX + 2)
         XCTAssertLessThanOrEqual(detailFrame.maxX, windowFrame.maxX)
 
         let screenshot = XCUIScreen.main.screenshot()
@@ -167,8 +172,11 @@ final class OpenNowUITests: XCTestCase {
 
     private func makeApp() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchEnvironment[LaunchEnvironmentKey.enableTestHooks] = "1"
         app.launchEnvironment[LaunchEnvironmentKey.defaultsSuite] = "OpenNowUITests-\(UUID().uuidString)"
         app.launchEnvironment[LaunchEnvironmentKey.testFile] = ""
+        app.launchEnvironment[LaunchEnvironmentKey.testMarkdown] = ""
+        app.launchEnvironment[LaunchEnvironmentKey.testFilename] = ""
         return app
     }
 
