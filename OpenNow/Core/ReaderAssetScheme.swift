@@ -43,20 +43,29 @@ enum ReaderAssetURLScheme {
 final class ReaderAssetSecurityScopeStore {
     static let shared = ReaderAssetSecurityScopeStore()
 
+    typealias AuthorizationHandler = @MainActor (URL) -> URL?
+
     private let lock = NSLock()
-    private var authorizedDirectories: [URL] = []
+    private var activeSupportDirectories: [URL] = []
+    private var authorizationHandler: AuthorizationHandler?
 
     private init() {}
 
     func replaceAuthorizedDirectories(_ urls: [URL]) {
         lock.lock()
         defer { lock.unlock() }
-        authorizedDirectories = Array(Set(urls.map(\.standardizedFileURL))).sorted { $0.path.count > $1.path.count }
+        activeSupportDirectories = Array(Set(urls.map(\.standardizedFileURL))).sorted { $0.path.count > $1.path.count }
     }
 
     func clear() {
         lock.lock()
-        authorizedDirectories = []
+        activeSupportDirectories = []
+        lock.unlock()
+    }
+
+    func setAuthorizationHandler(_ handler: AuthorizationHandler?) {
+        lock.lock()
+        authorizationHandler = handler
         lock.unlock()
     }
 
@@ -64,7 +73,7 @@ final class ReaderAssetSecurityScopeStore {
         let standardizedFileURL = fileURL.standardizedFileURL
 
         lock.lock()
-        let matchingScope = authorizedDirectories.first { scopeURL in
+        let matchingScope = activeSupportDirectories.first { scopeURL in
             standardizedFileURL.pathComponents.starts(with: scopeURL.pathComponents)
         }
         lock.unlock()
@@ -76,8 +85,52 @@ final class ReaderAssetSecurityScopeStore {
         return matchingScope.startAccessingSecurityScopedResource() ? matchingScope : nil
     }
 
+    func requestAuthorization(for fileURL: URL) -> URL? {
+        let handler = withLock { authorizationHandler }
+        guard let handler else {
+            return nil
+        }
+
+        let grantedRootURL: URL?
+        if Thread.isMainThread {
+            grantedRootURL = handler(fileURL.standardizedFileURL)
+        } else {
+            let semaphore = DispatchSemaphore(value: 0)
+            var resolvedRootURL: URL?
+            DispatchQueue.main.async {
+                resolvedRootURL = handler(fileURL.standardizedFileURL)
+                semaphore.signal()
+            }
+            semaphore.wait()
+            grantedRootURL = resolvedRootURL
+        }
+
+        guard let grantedRootURL else {
+            return nil
+        }
+
+        appendAuthorizedDirectory(grantedRootURL)
+        return grantedRootURL
+    }
+
     func endAccess(for scopeURL: URL) {
         scopeURL.stopAccessingSecurityScopedResource()
+    }
+
+    private func appendAuthorizedDirectory(_ url: URL) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let normalizedURL = url.standardizedFileURL
+        activeSupportDirectories.removeAll(where: { $0 == normalizedURL })
+        activeSupportDirectories.append(normalizedURL)
+        activeSupportDirectories.sort { $0.path.count > $1.path.count }
+    }
+
+    private func withLock<T>(_ body: () -> T) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return body()
     }
 }
 
@@ -94,14 +147,27 @@ final class ReaderAssetSchemeHandler: NSObject, WKURLSchemeHandler {
         }
 
         do {
-            let activeScopeURL = ReaderAssetSecurityScopeStore.shared.beginAccess(for: fileURL)
+            var activeScopeURL = ReaderAssetSecurityScopeStore.shared.beginAccess(for: fileURL)
             defer {
                 if let activeScopeURL {
                     ReaderAssetSecurityScopeStore.shared.endAccess(for: activeScopeURL)
                 }
             }
 
-            let data = try Data(contentsOf: fileURL)
+            let data: Data
+            do {
+                data = try Data(contentsOf: fileURL)
+            } catch {
+                guard Self.isPermissionDenied(error),
+                      let authorizedRootURL = ReaderAssetSecurityScopeStore.shared.requestAuthorization(for: fileURL),
+                      authorizedRootURL.startAccessingSecurityScopedResource()
+                else {
+                    throw error
+                }
+
+                activeScopeURL = authorizedRootURL
+                data = try Data(contentsOf: fileURL)
+            }
             let mimeType = UTType(filenameExtension: fileURL.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             logger.debug("Serving asset \(requestURL.absoluteString, privacy: .public) -> \(fileURL.path, privacy: .public) [\(mimeType, privacy: .public)]")
             let response = URLResponse(
@@ -120,4 +186,18 @@ final class ReaderAssetSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {}
+
+    private static func isPermissionDenied(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileReadNoPermissionError {
+            return true
+        }
+
+        if nsError.domain == NSPOSIXErrorDomain,
+           nsError.code == EACCES || nsError.code == EPERM {
+            return true
+        }
+
+        return false
+    }
 }

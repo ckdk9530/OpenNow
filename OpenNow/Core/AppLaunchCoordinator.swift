@@ -5,21 +5,12 @@ import OSLog
 @MainActor
 @Observable
 final class AppLaunchCoordinator {
-    private enum OpenRequestSource {
+    private enum OpenRequestSource: Equatable {
         case launch
         case panel
         case external
         case recent
         case reload
-
-        var shouldPromptForFolderTreeAccess: Bool {
-            switch self {
-            case .launch, .panel, .external:
-                true
-            case .recent, .reload:
-                false
-            }
-        }
 
         var allowsOpenMarkdownPanelOnFailure: Bool {
             switch self {
@@ -38,6 +29,7 @@ final class AppLaunchCoordinator {
     private let panelPresenter: any DocumentPanelPresenting
     private let alertPresenter: any DocumentAlertPresenting
     private let windowChromeController: any WindowChromeControlling
+    private let supportingFilesAccessCoordinator: SupportingFilesAccessCoordinator
     private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "Launch")
 
     let webBridge = ReaderWebBridge()
@@ -45,10 +37,10 @@ final class AppLaunchCoordinator {
     var activeDocument: OpenedDocument?
     var isLoadingDocument = false
     var recentFiles: [RecentFileEntry]
-    var authorizedFolders: [AuthorizedFolderEntry]
     var selectedAnchor: String?
     private(set) var readerFontScale: Double
 
+    private var documentSupportAccessEntries: [DocumentSupportAccessEntry]
     private var currentDescriptor: DocumentAccessDescriptor?
     private var currentAccessSession: DocumentAccessSession?
     private var currentFileModificationDate: Date?
@@ -72,8 +64,44 @@ final class AppLaunchCoordinator {
         self.alertPresenter = alertPresenter
         self.windowChromeController = windowChromeController
         self.recentFiles = []
-        self.authorizedFolders = []
         self.readerFontScale = 1.0
+        self.documentSupportAccessEntries = []
+        self.supportingFilesAccessCoordinator = SupportingFilesAccessCoordinator(
+            documentAccessController: documentAccessController,
+            preferencesStore: preferencesStore,
+            alertPresenter: alertPresenter
+        )
+
+        supportingFilesAccessCoordinator.documentStateDidChange = { [weak self] documentPath, state, unresolvedAssetURLs in
+            guard let self,
+                  let activeDocument = self.activeDocument,
+                  activeDocument.url.standardizedFileURL.path == documentPath
+            else {
+                return
+            }
+
+            self.activeDocument = activeDocument.updatingSupportAccess(
+                state: state,
+                unresolvedLocalAssetURLs: unresolvedAssetURLs
+            )
+        }
+        supportingFilesAccessCoordinator.entriesDidChange = { [weak self] entries in
+            self?.documentSupportAccessEntries = entries
+        }
+        supportingFilesAccessCoordinator.accessDidRecover = { [weak self] documentPath in
+            guard let self,
+                  let activeDocument = self.activeDocument,
+                  activeDocument.url.standardizedFileURL.path == documentPath
+            else {
+                return
+            }
+
+            self.webBridge.reloadPreservingScrollPosition()
+        }
+
+        ReaderAssetSecurityScopeStore.shared.setAuthorizationHandler { [weak self] assetURL in
+            self?.requestSupportingFilesAccess(for: assetURL)
+        }
     }
 
     var sidebarOutlineItems: [OutlineItem] {
@@ -87,16 +115,20 @@ final class AppLaunchCoordinator {
 
         hasStarted = true
         recentFiles = preferencesStore.loadRecentFiles()
-        authorizedFolders = preferencesStore.loadAuthorizedFolders()
         readerFontScale = preferencesStore.loadReaderFontScale()
         webBridge.setFontScale(readerFontScale)
+
+        supportingFilesAccessCoordinator.loadPersistedEntries()
+        supportingFilesAccessCoordinator.migrateLegacyAuthorizedFoldersIfNeeded(recentFiles: recentFiles)
+        documentSupportAccessEntries = supportingFilesAccessCoordinator.entries
+
         windowChromeController.apply(document: activeDocument)
 
         if let testFileURL = RuntimeEnvironment.launchTestDocumentURL() {
             open(
                 descriptor: documentAccessController.prepareAccess(
                     for: testFileURL,
-                    authorizedFolders: authorizedFolders
+                    documentSupportAccessEntries: documentSupportAccessEntries
                 ),
                 source: .external,
                 updateRecentFiles: false
@@ -121,19 +153,19 @@ final class AppLaunchCoordinator {
     }
 
     func openRecent(_ entry: RecentFileEntry) {
-        let latestRecentFiles = preferencesStore.loadRecentFiles()
-        recentFiles = latestRecentFiles
-        let latestAuthorizedFolders = preferencesStore.loadAuthorizedFolders()
-        authorizedFolders = latestAuthorizedFolders
-        let resolvedEntry = latestRecentFiles.first(where: { $0.path == entry.path }) ?? entry
+        recentFiles = preferencesStore.loadRecentFiles()
+        supportingFilesAccessCoordinator.loadPersistedEntries()
+        documentSupportAccessEntries = supportingFilesAccessCoordinator.entries
+
+        let resolvedEntry = recentFiles.first(where: { $0.path == entry.path }) ?? entry
 
         logger.notice(
-            "openRecent file=\(resolvedEntry.path, privacy: .public) storedFileBookmark=\(resolvedEntry.fileBookmarkData != nil) storedDirBookmark=\(resolvedEntry.directoryBookmarkData != nil) accessRootPath=\(resolvedEntry.accessRootPath ?? "<none>", privacy: .public)"
+            "openRecent file=\(resolvedEntry.path, privacy: .public) storedFileBookmark=\(resolvedEntry.fileBookmarkData != nil)"
         )
         open(
             descriptor: documentAccessController.resolveRecentFile(
                 resolvedEntry,
-                authorizedFolders: latestAuthorizedFolders
+                documentSupportAccessEntries: documentSupportAccessEntries
             ),
             source: .recent,
             updateRecentFiles: true
@@ -175,6 +207,9 @@ final class AppLaunchCoordinator {
         cancelPendingLoad()
         isLoadingDocument = false
         selectedAnchor = nil
+        if let documentURL = activeDocument?.url {
+            supportingFilesAccessCoordinator.resetSession(for: documentURL)
+        }
         activeDocument = nil
         currentDescriptor = nil
         currentFileModificationDate = nil
@@ -185,79 +220,28 @@ final class AppLaunchCoordinator {
         windowChromeController.apply(document: nil)
     }
 
-    func addAuthorizedFolderFromPanel() {
-        let suggestedDirectory = activeDocument?.directoryURL
-            ?? authorizedFolders.first.map { URL(fileURLWithPath: $0.path, isDirectory: true) }
-            ?? FileManager.default.homeDirectoryForCurrentUser
-        let message = "Choose a durable root folder to authorize. OpenNow will reuse access for Markdown files and relative assets inside that folder tree."
-
-        guard let folderURL = panelPresenter.pickFolderURL(
-            suggestedDirectory: suggestedDirectory,
-            message: message,
-            prompt: "Use Folder"
-        ) else {
-            return
-        }
-
-        saveAuthorizedFolder(documentAccessController.makeAuthorizedFolderEntry(for: folderURL))
-    }
-
-    func removeAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
-        preferencesStore.removeAuthorizedFolder(path: entry.path)
-        authorizedFolders = preferencesStore.loadAuthorizedFolders()
-    }
-
     private func openDocument(at url: URL, source: OpenRequestSource) {
         logger.notice("openDocument source=\(String(describing: source), privacy: .public) file=\(url.path, privacy: .public)")
 
-        if RuntimeEnvironment.isRunningUnderXCTest() == false,
-           source.shouldPromptForFolderTreeAccess,
-           documentAccessController.authorizedFolder(containing: url, authorizedFolders: authorizedFolders) == nil,
-           documentAccessController.documentContainsRelativeImages(at: url),
-           let folder = requestFolderTreeAccess(for: url) {
-            saveAuthorizedFolder(folder)
-        }
-
         open(
-            descriptor: documentAccessController.prepareAccess(for: url, authorizedFolders: authorizedFolders),
+            descriptor: documentAccessController.prepareAccess(
+                for: url,
+                documentSupportAccessEntries: documentSupportAccessEntries
+            ),
             source: source,
             updateRecentFiles: true
         )
     }
 
-    private func requestFolderTreeAccess(for fileURL: URL) -> AuthorizedFolderEntry? {
-        let preferredRootURL = documentAccessController.inferredAuthorizationRoot(for: fileURL)
-
-        guard alertPresenter.confirmFolderTreeAccess(for: fileURL, preferredRootURL: preferredRootURL) else {
+    private func requestSupportingFilesAccess(for assetURL: URL) -> URL? {
+        guard RuntimeEnvironment.isRunningUnderXCTest() == false else {
             return nil
         }
 
-        let message = """
-        Choose a durable access root for this Markdown file. OpenNow expects the tree root, not a nested child folder, so sibling images and future files under the same root keep working.
-        Suggested root: \(preferredRootURL.path)
-        """
-
-        while true {
-            guard let folderURL = panelPresenter.pickFolderURL(
-                suggestedDirectory: preferredRootURL,
-                message: message,
-                prompt: "Use Folder"
-            ) else {
-                return nil
-            }
-
-            if documentAccessController.isAuthorizedRootSelection(folderURL, validFor: fileURL) {
-                return documentAccessController.makeAuthorizedFolderEntry(for: folderURL)
-            }
-
-            guard alertPresenter.retryFolderTreeAccessSelection(
-                selectedRootURL: folderURL,
-                preferredRootURL: preferredRootURL,
-                fileURL: fileURL
-            ) else {
-                return nil
-            }
-        }
+        return supportingFilesAccessCoordinator.requestSupportAccess(
+            for: activeDocument,
+            failingAssetURL: assetURL
+        )
     }
 
     private func open(
@@ -266,19 +250,26 @@ final class AppLaunchCoordinator {
         updateRecentFiles: Bool
     ) {
         logger.notice(
-            "open source=\(String(describing: source), privacy: .public) file=\(descriptor.fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) dirBookmark=\(descriptor.directoryBookmarkData != nil) accessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
+            "open source=\(String(describing: source), privacy: .public) file=\(descriptor.fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) supportFolder=\(descriptor.supportFolderURL?.path ?? "<none>", privacy: .public)"
         )
         cancelPendingLoad()
         isLoadingDocument = true
         selectedAnchor = nil
 
+        if source != .reload {
+            supportingFilesAccessCoordinator.resetSession(for: descriptor.fileURL)
+        }
+
         currentAccessSession?.stop()
         ReaderAssetSecurityScopeStore.shared.clear()
+
         let accessSession = documentAccessController.startAccess(for: descriptor)
         currentAccessSession = accessSession
-        ReaderAssetSecurityScopeStore.shared.replaceAuthorizedDirectories(
-            accessSession.accessRootGranted ? [accessSession.accessRootURL] : []
-        )
+        if accessSession.supportFolderAccessGranted,
+           let supportFolderURL = accessSession.supportFolderURL {
+            ReaderAssetSecurityScopeStore.shared.replaceAuthorizedDirectories([supportFolderURL])
+        }
+
         currentDescriptor = descriptor
         fileWatcher.stop()
 
@@ -301,7 +292,7 @@ final class AppLaunchCoordinator {
                     self.preferencesStore.saveRecentFile(descriptor.recentEntry)
                     self.recentFiles = self.preferencesStore.loadRecentFiles()
                     self.logger.notice(
-                        "savedRecent file=\(descriptor.fileURL.path, privacy: .public) persistedFileBookmark=\(descriptor.recentEntry.fileBookmarkData != nil) persistedDirBookmark=\(descriptor.recentEntry.directoryBookmarkData != nil)"
+                        "savedRecent file=\(descriptor.fileURL.path, privacy: .public) persistedFileBookmark=\(descriptor.recentEntry.fileBookmarkData != nil)"
                     )
                 }
 
@@ -363,6 +354,9 @@ final class AppLaunchCoordinator {
             rawMarkdown: markdown,
             renderedHTML: rendered.html,
             outlineItems: rendered.outlineItems,
+            relativeLocalAssetURLs: rendered.relativeLocalAssetURLs,
+            unresolvedLocalAssetURLs: [],
+            supportAccessState: .ready,
             lastKnownModificationDate: resourceValues.contentModificationDate
         )
     }
@@ -390,11 +384,6 @@ final class AppLaunchCoordinator {
             source: .reload,
             updateRecentFiles: false
         )
-    }
-
-    private func saveAuthorizedFolder(_ entry: AuthorizedFolderEntry) {
-        preferencesStore.saveAuthorizedFolder(entry)
-        authorizedFolders = preferencesStore.loadAuthorizedFolders()
     }
 
     private func setReaderFontScale(_ scale: Double) {

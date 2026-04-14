@@ -70,6 +70,17 @@ final class ReaderWebBridge: NSObject {
         webView?.evaluateJavaScript("window.OpenNowBridge.scrollToAnchor('\(escapedAnchor)');")
     }
 
+    func reloadPreservingScrollPosition() {
+        Task {
+            guard let webView else {
+                return
+            }
+
+            pendingScrollFraction = await captureScrollFraction()
+            webView.reload()
+        }
+    }
+
     func setFontScale(_ scale: Double) {
         fontScale = min(max(scale, 0.85), 1.8)
         applyFontScale()

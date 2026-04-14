@@ -58,11 +58,7 @@ struct OpenNowTests {
             baseURL: URL(fileURLWithPath: "/tmp/project", isDirectory: true)
         )
 
-        #expect(
-            rendered.html.contains(
-                #"src="opennow-file:///tmp/project/fixtures/diagram.svg""#
-            )
-        )
+        #expect(rendered.html.contains(#"src="opennow-file:///tmp/project/fixtures/diagram.svg""#))
         #expect(rendered.relativeLocalAssetURLs == [URL(fileURLWithPath: "/tmp/project/fixtures/diagram.svg")])
     }
 
@@ -73,11 +69,22 @@ struct OpenNowTests {
             baseURL: URL(fileURLWithPath: "/tmp/project", isDirectory: true)
         )
 
-        #expect(
-            rendered.html.contains(
-                #"src="opennow-file:///tmp/project/fixtures/My%20Diagram.svg""#
-            )
+        #expect(rendered.html.contains(#"src="opennow-file:///tmp/project/fixtures/My%20Diagram.svg""#))
+    }
+
+    @Test func rendererRewritesImagesInsideGeneratedTables() throws {
+        let renderer = MarkdownRenderer()
+        let rendered = try renderer.render(
+            markdown: """
+            | Preview | Notes |
+            | --- | --- |
+            | ![Diagram](./fixtures/diagram.svg) | local image inside table |
+            """,
+            baseURL: URL(fileURLWithPath: "/tmp/project", isDirectory: true)
         )
+
+        #expect(rendered.html.contains("<table>"))
+        #expect(rendered.html.contains(#"src="opennow-file:///tmp/project/fixtures/diagram.svg""#))
     }
 
     @Test func readerAssetURLSchemeRoundTripsFilePaths() {
@@ -98,23 +105,26 @@ struct OpenNowTests {
         #expect(ReaderAssetURLScheme.resolve(legacyURL) == fileURL)
     }
 
-    @Test func rendererRewritesImagesInsideGeneratedTables() throws {
-        let renderer = MarkdownRenderer()
-        let rendered = try renderer.render(
-            markdown: """
-            | Preview | Notes |
-            | --- | --- |
-            | ![Diagram](./fixtures/diagram.svg) | local image inside table |
-            """,
-            baseURL: URL(fileURLWithPath: "/tmp/project", isDirectory: true)
-        )
+    @Test func readerAssetSecurityScopeStoreRequestsAuthorizationOnDemand() {
+        let store = ReaderAssetSecurityScopeStore.shared
+        let fileURL = URL(fileURLWithPath: "/tmp/project/assets/diagram.png")
+        let supportFolderURL = URL(fileURLWithPath: "/tmp/project/assets", isDirectory: true)
+        var requestedURL: URL?
 
-        #expect(rendered.html.contains("<table>"))
-        #expect(
-            rendered.html.contains(
-                #"src="opennow-file:///tmp/project/fixtures/diagram.svg""#
-            )
-        )
+        store.clear()
+        store.setAuthorizationHandler { url in
+            requestedURL = url
+            return supportFolderURL
+        }
+        defer {
+            store.setAuthorizationHandler(nil)
+            store.clear()
+        }
+
+        let scopeURL = store.requestAuthorization(for: fileURL)
+
+        #expect(requestedURL == fileURL)
+        #expect(scopeURL == supportFolderURL)
     }
 
     @Test func preferencesStorePersistsRecentFiles() {
@@ -124,8 +134,6 @@ struct OpenNowTests {
             path: "/tmp/example.md",
             displayName: "example.md",
             fileBookmarkData: Data([0x01]),
-            directoryBookmarkData: Data([0x02]),
-            accessRootPath: "/tmp",
             lastOpenedAt: .distantPast
         )
 
@@ -135,10 +143,27 @@ struct OpenNowTests {
         #expect(loaded.count == 1)
         #expect(loaded.first?.path == entry.path)
         #expect(loaded.first?.displayName == entry.displayName)
-        #expect(loaded.first?.accessRootPath == entry.accessRootPath)
+        #expect(loaded.first?.fileBookmarkData == entry.fileBookmarkData)
     }
 
-    @Test func preferencesStorePersistsAuthorizedFolders() {
+    @Test func preferencesStorePersistsDocumentSupportAccess() {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let store = PreferencesStore(defaults: defaults)
+        let entry = DocumentSupportAccessEntry(
+            documentPath: "/tmp/example.md",
+            documentBookmarkData: Data([0x01]),
+            supportFolderPath: "/tmp/assets",
+            supportFolderBookmarkData: Data([0x02]),
+            lastResolvedAt: .distantPast
+        )
+
+        store.saveDocumentSupportAccess(entry)
+
+        let loaded = store.loadDocumentSupportAccess()
+        #expect(loaded == [entry])
+    }
+
+    @Test func preferencesStoreClearsLegacyAuthorizedFolders() {
         let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
         let store = PreferencesStore(defaults: defaults)
         let entry = AuthorizedFolderEntry(
@@ -149,33 +174,9 @@ struct OpenNowTests {
         )
 
         store.saveAuthorizedFolder(entry)
+        store.clearAuthorizedFolders()
 
-        let loaded = store.loadAuthorizedFolders()
-        #expect(loaded == [entry])
-    }
-
-    @Test func preferencesStoreRemovesAuthorizedFolders() {
-        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
-        let store = PreferencesStore(defaults: defaults)
-        let desktop = AuthorizedFolderEntry(
-            path: "/Users/dahengchen/Desktop",
-            displayName: "Desktop",
-            bookmarkData: Data([0xAA]),
-            lastUsedAt: .distantPast
-        )
-        let documents = AuthorizedFolderEntry(
-            path: "/Users/dahengchen/Documents",
-            displayName: "Documents",
-            bookmarkData: Data([0xBB]),
-            lastUsedAt: .distantPast
-        )
-
-        store.saveAuthorizedFolder(desktop)
-        store.saveAuthorizedFolder(documents)
-        store.removeAuthorizedFolder(path: desktop.path)
-
-        let loaded = store.loadAuthorizedFolders()
-        #expect(loaded == [documents])
+        #expect(store.loadAuthorizedFolders().isEmpty)
     }
 
     @Test func preferencesStoreClearsWindowAndSplitViewAutosaveArtifacts() {
@@ -210,32 +211,25 @@ struct OpenNowTests {
         #expect(rootURL.path == "/Users/example/Desktop")
     }
 
-    @Test func inferredAuthorizationRootUsesTopLevelWorkspaceFolder() {
+    @Test func preferredSupportFolderUsesCommonAncestorForMissingAssets() {
         let controller = DocumentAccessController()
-        let rootURL = controller.inferredAuthorizationRoot(
-            for: URL(fileURLWithPath: "/Users/example/Project/OpenNow/docs/render-fixtures/complex-render-fixture.md")
+        let preferred = controller.preferredSupportFolder(
+            for: [
+                URL(fileURLWithPath: "/Users/example/Project/assets/a.png"),
+                URL(fileURLWithPath: "/Users/example/Project/assets/sub/b.png")
+            ],
+            documentDirectoryURL: URL(fileURLWithPath: "/Users/example/Project/docs", isDirectory: true)
         )
 
-        #expect(rootURL.path == "/Users/example/Project")
+        #expect(preferred.path == "/Users/example/Project/assets")
     }
 
-    @Test func inferredAuthorizationRootUsesMountedVolumeRoot() {
+    @Test func migrateLegacyAuthorizedFoldersCreatesDocumentBoundSupportAccess() {
         let controller = DocumentAccessController()
-        let rootURL = controller.inferredAuthorizationRoot(
-            for: URL(fileURLWithPath: "/Volumes/Archive/Notes/Book/chapter.md")
-        )
-
-        #expect(rootURL.path == "/Volumes/Archive")
-    }
-
-    @Test func resolveRecentFileFallsBackToCurrentAuthorizedFolder() {
-        let controller = DocumentAccessController()
-        let entry = RecentFileEntry(
-            path: "/Users/example/Project/OpenNow/README.md",
-            displayName: "README.md",
+        let recentFile = RecentFileEntry(
+            path: "/Users/example/Project/docs/readme.md",
+            displayName: "readme.md",
             fileBookmarkData: nil,
-            directoryBookmarkData: nil,
-            accessRootPath: nil,
             lastOpenedAt: .distantPast
         )
         let authorizedFolder = AuthorizedFolderEntry(
@@ -245,13 +239,84 @@ struct OpenNowTests {
             lastUsedAt: .distantPast
         )
 
-        let descriptor = controller.resolveRecentFile(entry, authorizedFolders: [authorizedFolder])
+        let migratedEntries = controller.migrateLegacyAuthorizedFolders(
+            [authorizedFolder],
+            recentFiles: [recentFile]
+        )
 
-        #expect(descriptor.fileURL.path == entry.path)
-        #expect(descriptor.accessRootURL?.path == authorizedFolder.path)
+        #expect(migratedEntries.count == 1)
+        #expect(migratedEntries[0].documentPath == recentFile.path)
+        #expect(migratedEntries[0].supportFolderPath == authorizedFolder.path)
     }
 
-    @Test @MainActor func coordinatorPromptsForFolderTreeAccessAndPersistsAuthorization() async throws {
+    @Test @MainActor func supportingFilesCoordinatorPersistsDocumentScopedRecovery() {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let preferencesStore = PreferencesStore(defaults: defaults)
+        let alertPresenter = MockDocumentAlertPresenter()
+        let coordinator = SupportingFilesAccessCoordinator(
+            documentAccessController: DocumentAccessController(),
+            preferencesStore: preferencesStore,
+            alertPresenter: alertPresenter
+        )
+        let documentURL = URL(fileURLWithPath: "/tmp/project/docs/readme.md")
+        let unresolvedAssetURL = URL(fileURLWithPath: "/tmp/project/assets/diagram.png")
+        let document = OpenedDocument(
+            url: documentURL,
+            directoryURL: documentURL.deletingLastPathComponent(),
+            rawMarkdown: "![Diagram](../assets/diagram.png)",
+            renderedHTML: "<img>",
+            outlineItems: [],
+            relativeLocalAssetURLs: [unresolvedAssetURL],
+            unresolvedLocalAssetURLs: [],
+            supportAccessState: .ready,
+            lastKnownModificationDate: nil
+        )
+
+        alertPresenter.recoveryChoices = [.selectedFolder(URL(fileURLWithPath: "/tmp/project", isDirectory: true))]
+        coordinator.loadPersistedEntries()
+
+        let grantedURL = coordinator.requestSupportAccess(for: document, failingAssetURL: unresolvedAssetURL)
+
+        #expect(grantedURL?.path == "/tmp/project")
+        #expect(preferencesStore.loadDocumentSupportAccess().count == 1)
+        #expect(preferencesStore.loadDocumentSupportAccess().first?.documentPath == documentURL.path)
+    }
+
+    @Test @MainActor func supportingFilesCoordinatorSuppressesPromptForCurrentSession() {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let preferencesStore = PreferencesStore(defaults: defaults)
+        let alertPresenter = MockDocumentAlertPresenter()
+        let coordinator = SupportingFilesAccessCoordinator(
+            documentAccessController: DocumentAccessController(),
+            preferencesStore: preferencesStore,
+            alertPresenter: alertPresenter
+        )
+        let documentURL = URL(fileURLWithPath: "/tmp/project/docs/readme.md")
+        let unresolvedAssetURL = URL(fileURLWithPath: "/tmp/project/assets/diagram.png")
+        let document = OpenedDocument(
+            url: documentURL,
+            directoryURL: documentURL.deletingLastPathComponent(),
+            rawMarkdown: "![Diagram](../assets/diagram.png)",
+            renderedHTML: "<img>",
+            outlineItems: [],
+            relativeLocalAssetURLs: [unresolvedAssetURL],
+            unresolvedLocalAssetURLs: [],
+            supportAccessState: .ready,
+            lastKnownModificationDate: nil
+        )
+
+        alertPresenter.recoveryChoices = [.continueWithoutImages]
+        coordinator.loadPersistedEntries()
+
+        let firstAttempt = coordinator.requestSupportAccess(for: document, failingAssetURL: unresolvedAssetURL)
+        let secondAttempt = coordinator.requestSupportAccess(for: document, failingAssetURL: unresolvedAssetURL)
+
+        #expect(firstAttempt == nil)
+        #expect(secondAttempt == nil)
+        #expect(alertPresenter.recoveryCallCount == 1)
+    }
+
+    @Test @MainActor func coordinatorOpensRelativeAssetMarkdownWithoutPromptingForSupportingFilesAccess() async throws {
         let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
         let preferencesStore = PreferencesStore(defaults: defaults)
         let documentAccessController = DocumentAccessController()
@@ -275,16 +340,14 @@ struct OpenNowTests {
             ![Diagram](./diagram.png)
             """
         )
-        let preferredRootURL = documentAccessController.inferredAuthorizationRoot(for: markdownURL)
-        panelPresenter.folderURLs = [preferredRootURL]
-        alertPresenter.confirmFolderTreeAccessResult = true
 
         coordinator.start()
         coordinator.openDocument(at: markdownURL)
+        await waitUntil {
+            coordinator.activeDocument?.url == markdownURL
+        }
 
-        #expect(alertPresenter.confirmFolderTreeAccessCallCount == 1)
-        #expect(panelPresenter.folderPickCallCount == 1)
-        #expect(coordinator.authorizedFolders.first?.path == preferredRootURL.path)
+        #expect(alertPresenter.recoveryCallCount == 0)
         coordinator.closeCurrentFile()
     }
 
@@ -316,8 +379,6 @@ struct OpenNowTests {
             path: "/tmp/OpenNow-Missing-\(UUID().uuidString).md",
             displayName: "Missing.md",
             fileBookmarkData: nil,
-            directoryBookmarkData: nil,
-            accessRootPath: nil,
             lastOpenedAt: .distantPast
         )
         panelPresenter.documentURLs = [retryDocumentURL]
@@ -334,7 +395,6 @@ struct OpenNowTests {
 
         #expect(alertPresenter.loadFailureCallCount == 1)
         #expect(alertPresenter.lastAllowsOpenMarkdownPanel == true)
-        #expect(panelPresenter.documentPickCallCount == 1)
         coordinator.closeCurrentFile()
     }
 
@@ -416,59 +476,52 @@ struct OpenNowTests {
 @MainActor
 private final class MockDocumentPanelPresenter: DocumentPanelPresenting {
     var documentURLs: [URL?] = []
-    var folderURLs: [URL?] = []
     private(set) var documentPickCallCount = 0
-    private(set) var folderPickCallCount = 0
 
     func pickDocumentURL(startingDirectory: URL?) -> URL? {
         documentPickCallCount += 1
-        if documentURLs.isEmpty {
+        guard documentURLs.isEmpty == false else {
             return nil
         }
 
         return documentURLs.removeFirst()
     }
-
-    func pickFolderURL(
-        suggestedDirectory: URL?,
-        message: String,
-        prompt: String
-    ) -> URL? {
-        folderPickCallCount += 1
-        if folderURLs.isEmpty {
-            return nil
-        }
-
-        return folderURLs.removeFirst()
-    }
 }
 
 @MainActor
 private final class MockDocumentAlertPresenter: DocumentAlertPresenting {
-    var confirmFolderTreeAccessResult = false
-    var retryFolderTreeAccessResults: [Bool] = []
+    var recoveryChoices: [SupportingFilesRecoveryChoice] = []
+    var retrySupportingFilesSelectionResults: [Bool] = []
     var loadFailureActions: [LoadFailureAlertAction] = []
-    private(set) var confirmFolderTreeAccessCallCount = 0
-    private(set) var retryFolderTreeAccessCallCount = 0
+    private(set) var recoveryCallCount = 0
+    private(set) var retrySelectionCallCount = 0
     private(set) var loadFailureCallCount = 0
     private(set) var lastAllowsOpenMarkdownPanel = false
 
-    func confirmFolderTreeAccess(for fileURL: URL, preferredRootURL: URL) -> Bool {
-        confirmFolderTreeAccessCallCount += 1
-        return confirmFolderTreeAccessResult
+    func recoverSupportingFilesAccess(
+        for documentURL: URL,
+        suggestedDirectory: URL?,
+        unresolvedAssetURLs: [URL]
+    ) -> SupportingFilesRecoveryChoice {
+        recoveryCallCount += 1
+        guard recoveryChoices.isEmpty == false else {
+            return .unavailable
+        }
+
+        return recoveryChoices.removeFirst()
     }
 
-    func retryFolderTreeAccessSelection(
-        selectedRootURL: URL,
-        preferredRootURL: URL,
-        fileURL: URL
+    func retrySupportingFilesSelection(
+        selectedDirectory: URL,
+        suggestedDirectory: URL,
+        unresolvedAssetURLs: [URL]
     ) -> Bool {
-        retryFolderTreeAccessCallCount += 1
-        if retryFolderTreeAccessResults.isEmpty {
+        retrySelectionCallCount += 1
+        guard retrySupportingFilesSelectionResults.isEmpty == false else {
             return false
         }
 
-        return retryFolderTreeAccessResults.removeFirst()
+        return retrySupportingFilesSelectionResults.removeFirst()
     }
 
     func presentLoadFailure(
@@ -477,7 +530,7 @@ private final class MockDocumentAlertPresenter: DocumentAlertPresenting {
     ) -> LoadFailureAlertAction {
         loadFailureCallCount += 1
         lastAllowsOpenMarkdownPanel = allowsOpenMarkdownPanel
-        if loadFailureActions.isEmpty {
+        guard loadFailureActions.isEmpty == false else {
             return .dismiss
         }
 

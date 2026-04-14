@@ -25,7 +25,6 @@ struct ReaderDetailView: View {
             } else {
                 EmptyReaderView(
                     recentFiles: coordinator.recentFiles,
-                    authorizedFolders: coordinator.authorizedFolders,
                     openRecent: coordinator.openRecent(_:),
                     openPanel: coordinator.openDocumentFromPanel,
                     clearRecent: coordinator.clearRecentFiles
@@ -62,7 +61,6 @@ private struct LoadingDocumentView: View {
 
 private struct EmptyReaderView: View {
     let recentFiles: [RecentFileEntry]
-    let authorizedFolders: [AuthorizedFolderEntry]
     let openRecent: (RecentFileEntry) -> Void
     let openPanel: () -> Void
     let clearRecent: () -> Void
@@ -90,26 +88,6 @@ private struct EmptyReaderView: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("open-markdown-button")
                 .accessibilityLabel("Open Markdown…")
-
-                if authorizedFolders.isEmpty == false {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Authorized Roots")
-                            .font(.headline)
-
-                        ForEach(authorizedFolders.prefix(3)) { entry in
-                            Label(entry.path, systemImage: "folder.badge.checkmark")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Text("OpenNow requests a durable root folder automatically when a Markdown file needs relative assets.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
 
                 if recentFiles.isEmpty == false {
                     VStack(alignment: .leading, spacing: 10) {
@@ -150,7 +128,7 @@ private struct EmptyReaderView: View {
     }
 
     private var hasSupplementarySections: Bool {
-        authorizedFolders.isEmpty == false || recentFiles.isEmpty == false
+        recentFiles.isEmpty == false
     }
 }
 

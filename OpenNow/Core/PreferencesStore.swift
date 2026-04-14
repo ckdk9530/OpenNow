@@ -173,6 +173,7 @@ enum RuntimeEnvironment {
 final class PreferencesStore {
     private enum Key {
         static let recentFiles = "recentFiles"
+        static let documentSupportAccess = "documentSupportAccess"
         static let authorizedFolders = "authorizedFolders"
         static let windowFrame = "windowFrame"
         static let sceneWindowFrame = "NSWindow Frame main"
@@ -224,6 +225,25 @@ final class PreferencesStore {
         defaults.removeObject(forKey: Key.recentFiles)
     }
 
+    func loadDocumentSupportAccess() -> [DocumentSupportAccessEntry] {
+        guard let data = defaults.data(forKey: Key.documentSupportAccess) else {
+            return []
+        }
+
+        return (try? decoder.decode([DocumentSupportAccessEntry].self, from: data)) ?? []
+    }
+
+    func saveDocumentSupportAccess(_ entry: DocumentSupportAccessEntry) {
+        var entries = loadDocumentSupportAccess()
+        entries.removeAll { $0.documentPath == entry.documentPath }
+        entries.insert(entry, at: 0)
+        persist(Array(entries.prefix(recentFilesLimit)), forKey: Key.documentSupportAccess)
+    }
+
+    func replaceDocumentSupportAccess(_ entries: [DocumentSupportAccessEntry]) {
+        persist(Array(entries.prefix(recentFilesLimit)), forKey: Key.documentSupportAccess)
+    }
+
     func loadAuthorizedFolders() -> [AuthorizedFolderEntry] {
         guard let data = defaults.data(forKey: Key.authorizedFolders) else {
             return []
@@ -242,6 +262,10 @@ final class PreferencesStore {
     func removeAuthorizedFolder(path: String) {
         let entries = loadAuthorizedFolders().filter { $0.path != path }
         persist(entries, forKey: Key.authorizedFolders)
+    }
+
+    func clearAuthorizedFolders() {
+        defaults.removeObject(forKey: Key.authorizedFolders)
     }
 
     func loadWindowFrame() -> CGRect? {

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" fill="none">
+  <rect width="960" height="420" rx="32" fill="#F5F7FB"/>
+  <rect x="44" y="48" width="250" height="112" rx="24" fill="#0F172A"/>
+  <text x="72" y="101" fill="#F8FAFC" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="30" font-weight="700">Markdown File</text>
+  <text x="72" y="136" fill="#CBD5E1" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="20">/fixtures/sibling-assets</text>
+
+  <rect x="354" y="48" width="250" height="112" rx="24" fill="#1D4ED8"/>
+  <text x="382" y="101" fill="#EFF6FF" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="30" font-weight="700">Sibling Asset</text>
+  <text x="382" y="136" fill="#DBEAFE" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="20">/fixtures/shared-assets</text>
+
+  <rect x="664" y="48" width="252" height="112" rx="24" fill="#065F46"/>
+  <text x="692" y="101" fill="#ECFDF5" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="30" font-weight="700">Sandbox Check</text>
+  <text x="692" y="136" fill="#D1FAE5" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="20">scope must cross folders</text>
+
+  <path d="M294 104H354" stroke="#475569" stroke-width="10" stroke-linecap="round"/>
+  <path d="M604 104H664" stroke="#475569" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="324" cy="104" r="16" fill="#94A3B8"/>
+  <circle cx="634" cy="104" r="16" fill="#94A3B8"/>
+
+  <rect x="60" y="216" width="840" height="144" rx="28" fill="white" stroke="#E2E8F0" stroke-width="4"/>
+  <text x="92" y="268" fill="#0F172A" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="28" font-weight="700">What this fixture proves</text>
+  <text x="92" y="310" fill="#334155" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="22">
+    The Markdown file can open first, then request wider access only when WKWebView touches a sibling resource.
+  </text>
+  <text x="92" y="342" fill="#334155" font-family="SF Pro Text, Helvetica, Arial, sans-serif" font-size="22">
+    Move the whole render-fixtures folder under Desktop or Documents to see whether macOS raises a native Files &amp; Folders prompt.
+  </text>
+</svg>

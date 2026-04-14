@@ -30,23 +30,26 @@ final class DocumentAccessController {
 
     func prepareAccess(
         for url: URL,
-        authorizedFolders: [AuthorizedFolderEntry]
+        documentSupportAccessEntries: [DocumentSupportAccessEntry]
     ) -> DocumentAccessDescriptor {
         let sourceURL = url
         let fileURL = sourceURL.standardizedFileURL
-        let directoryURL = fileURL.deletingLastPathComponent()
-        let accessRootEntry = authorizedFolder(containing: fileURL, authorizedFolders: authorizedFolders)
+        let supportAccessEntry = matchingDocumentSupportAccess(
+            for: fileURL,
+            entries: documentSupportAccessEntries
+        )
 
         let descriptor = DocumentAccessDescriptor(
             fileURL: fileURL,
-            directoryURL: directoryURL,
+            directoryURL: fileURL.deletingLastPathComponent(),
             fileBookmarkData: makeBookmark(for: sourceURL),
-            accessRootURL: resolveAuthorizedFolderURL(accessRootEntry),
-            directoryBookmarkData: accessRootEntry?.bookmarkData
+            supportFolderURL: supportAccessEntry.flatMap(resolveDocumentSupportFolderURL),
+            supportFolderBookmarkData: supportAccessEntry?.supportFolderBookmarkData,
+            supportAccessEntry: supportAccessEntry
         )
 
         logger.notice(
-            "prepareAccess file=\(fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) accessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public) dirBookmark=\(descriptor.directoryBookmarkData != nil)"
+            "prepareAccess file=\(fileURL.path, privacy: .public) fileBookmark=\(descriptor.fileBookmarkData != nil) supportFolder=\(descriptor.supportFolderURL?.path ?? "<none>", privacy: .public)"
         )
 
         return descriptor
@@ -54,52 +57,166 @@ final class DocumentAccessController {
 
     func resolveRecentFile(
         _ entry: RecentFileEntry,
-        authorizedFolders: [AuthorizedFolderEntry]
+        documentSupportAccessEntries: [DocumentSupportAccessEntry]
     ) -> DocumentAccessDescriptor {
-        let descriptor = resolve(
-            path: entry.path,
+        let fileURL = resolveBookmark(entry.fileBookmarkData) ?? URL(fileURLWithPath: entry.path)
+        let supportAccessEntry = matchingDocumentSupportAccess(
+            for: fileURL,
+            entries: documentSupportAccessEntries
+        )
+
+        let descriptor = DocumentAccessDescriptor(
+            fileURL: fileURL,
+            directoryURL: fileURL.deletingLastPathComponent(),
             fileBookmarkData: entry.fileBookmarkData,
-            directoryBookmarkData: entry.directoryBookmarkData,
-            accessRootPath: entry.accessRootPath,
-            authorizedFolders: authorizedFolders
+            supportFolderURL: supportAccessEntry.flatMap(resolveDocumentSupportFolderURL),
+            supportFolderBookmarkData: supportAccessEntry?.supportFolderBookmarkData,
+            supportAccessEntry: supportAccessEntry
         )
 
         logger.notice(
-            "resolveRecent file=\(entry.path, privacy: .public) storedFileBookmark=\(entry.fileBookmarkData != nil) storedDirBookmark=\(entry.directoryBookmarkData != nil) resolvedAccessRoot=\(descriptor.accessRootURL?.path ?? "<none>", privacy: .public)"
+            "resolveRecent file=\(entry.path, privacy: .public) fileBookmark=\(entry.fileBookmarkData != nil) supportFolder=\(descriptor.supportFolderURL?.path ?? "<none>", privacy: .public)"
         )
 
         return descriptor
     }
 
-    func authorizedFolder(
-        containing fileURL: URL,
-        authorizedFolders: [AuthorizedFolderEntry]
-    ) -> AuthorizedFolderEntry? {
-        let standardizedFileURL = fileURL.standardizedFileURL
+    func matchingDocumentSupportAccess(
+        for documentURL: URL,
+        entries: [DocumentSupportAccessEntry]
+    ) -> DocumentSupportAccessEntry? {
+        let standardizedDocumentURL = documentURL.standardizedFileURL
 
-        return authorizedFolders
-            .compactMap { entry -> (AuthorizedFolderEntry, URL)? in
-                guard let rootURL = resolveAuthorizedFolderURL(entry) else {
-                    return nil
-                }
+        if let exactPathMatch = entries.first(where: { $0.documentPath == standardizedDocumentURL.path }) {
+            return exactPathMatch
+        }
 
-                return (entry, rootURL)
+        return entries.first { entry in
+            guard let resolvedDocumentURL = resolveDocumentURL(for: entry) else {
+                return false
             }
-            .filter { contains(standardizedFileURL, within: $0.1) }
-            .max { lhs, rhs in
-                lhs.1.path.count < rhs.1.path.count
-            }?
-            .0
+
+            return resolvedDocumentURL == standardizedDocumentURL
+        }
     }
 
-    func makeAuthorizedFolderEntry(for url: URL) -> AuthorizedFolderEntry {
-        let sourceURL = url
-        let folderURL = sourceURL.standardizedFileURL
-        return AuthorizedFolderEntry(
-            path: folderURL.path,
-            displayName: folderURL.lastPathComponent,
-            bookmarkData: makeBookmark(for: sourceURL),
-            lastUsedAt: .now
+    func resolveDocumentSupportFolderURL(_ entry: DocumentSupportAccessEntry) -> URL? {
+        let documentURL = resolveDocumentURL(for: entry)
+            ?? URL(fileURLWithPath: entry.documentPath)
+
+        return resolveBookmark(entry.supportFolderBookmarkData, relativeTo: documentURL)
+            ?? URL(fileURLWithPath: entry.supportFolderPath, isDirectory: true).standardizedFileURL
+    }
+
+    func makeDocumentSupportAccessEntry(
+        documentURL: URL,
+        supportFolderURL: URL
+    ) -> DocumentSupportAccessEntry {
+        let standardizedDocumentURL = documentURL.standardizedFileURL
+        let standardizedSupportFolderURL = supportFolderURL.standardizedFileURL
+
+        return DocumentSupportAccessEntry(
+            documentPath: standardizedDocumentURL.path,
+            documentBookmarkData: makeBookmark(for: standardizedDocumentURL),
+            supportFolderPath: standardizedSupportFolderURL.path,
+            supportFolderBookmarkData: makeDocumentScopedBookmark(
+                for: standardizedSupportFolderURL,
+                relativeTo: standardizedDocumentURL
+            ) ?? makeBookmark(for: standardizedSupportFolderURL),
+            lastResolvedAt: .now
+        )
+    }
+
+    func preferredSupportFolder(
+        for unresolvedAssetURLs: [URL],
+        documentDirectoryURL: URL
+    ) -> URL {
+        let normalizedAssets = unresolvedAssetURLs.map(\.standardizedFileURL)
+
+        if let commonAncestor = commonAncestor(for: normalizedAssets) {
+            return commonAncestor
+        }
+
+        let documentDirectory = documentDirectoryURL.standardizedFileURL
+        let documentParent = documentDirectory.deletingLastPathComponent()
+
+        if normalizedAssets.isEmpty == false {
+            let firstAssetFolder = normalizedAssets[0].deletingLastPathComponent()
+            if contains(firstAssetFolder, within: documentParent) || contains(documentParent, within: firstAssetFolder) {
+                return firstAssetFolder
+            }
+        }
+
+        if documentParent.path != documentDirectory.path {
+            return documentParent
+        }
+
+        return inferredAuthorizationRoot(for: documentDirectory)
+    }
+
+    func isValidSupportFolderSelection(
+        _ selectedFolderURL: URL,
+        for unresolvedAssetURLs: [URL]
+    ) -> Bool {
+        let standardizedFolderURL = selectedFolderURL.standardizedFileURL
+        return unresolvedAssetURLs.allSatisfy { assetURL in
+            contains(assetURL.standardizedFileURL, within: standardizedFolderURL)
+        }
+    }
+
+    func migrateLegacyAuthorizedFolders(
+        _ authorizedFolders: [AuthorizedFolderEntry],
+        recentFiles: [RecentFileEntry]
+    ) -> [DocumentSupportAccessEntry] {
+        guard authorizedFolders.isEmpty == false, recentFiles.isEmpty == false else {
+            return []
+        }
+
+        let resolvedAuthorizedFolders = authorizedFolders.compactMap { entry -> (AuthorizedFolderEntry, URL)? in
+            guard let folderURL = resolveAuthorizedFolderURL(entry) else {
+                return nil
+            }
+
+            return (entry, folderURL)
+        }
+
+        var migratedEntries: [DocumentSupportAccessEntry] = []
+
+        for recentFile in recentFiles {
+            let documentURL = resolveBookmark(recentFile.fileBookmarkData)
+                ?? URL(fileURLWithPath: recentFile.path).standardizedFileURL
+
+            guard let matchingRoot = resolvedAuthorizedFolders
+                .filter({ contains(documentURL, within: $0.1) })
+                .max(by: { $0.1.path.count < $1.1.path.count }) else {
+                continue
+            }
+
+            migratedEntries.append(
+                DocumentSupportAccessEntry(
+                    documentPath: documentURL.path,
+                    documentBookmarkData: recentFile.fileBookmarkData,
+                    supportFolderPath: matchingRoot.1.path,
+                    supportFolderBookmarkData: matchingRoot.0.bookmarkData,
+                    lastResolvedAt: .now
+                )
+            )
+        }
+
+        return uniqueDocumentSupportAccessEntries(migratedEntries)
+    }
+
+    func resolveBookmark(_ bookmarkData: Data?, relativeTo url: URL? = nil) -> URL? {
+        guard let bookmarkData else {
+            return nil
+        }
+
+        var isStale = false
+        return try? URL(
+            resolvingBookmarkData: bookmarkData,
+            options: [.withSecurityScope, .withoutUI],
+            relativeTo: url,
+            bookmarkDataIsStale: &isStale
         )
     }
 
@@ -114,132 +231,100 @@ final class DocumentAccessController {
         return data
     }
 
-    func resolveBookmark(_ bookmarkData: Data) -> URL? {
-        var isStale = false
-        return try? URL(
-            resolvingBookmarkData: bookmarkData,
-            options: [.withSecurityScope, .withoutUI],
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
+    func makeDocumentScopedBookmark(for url: URL, relativeTo documentURL: URL) -> Data? {
+        let data = try? url.bookmarkData(
+            options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
+            includingResourceValuesForKeys: nil,
+            relativeTo: documentURL
         )
+
+        logger.notice(
+            "makeDocumentScopedBookmark url=\(url.path, privacy: .public) relativeTo=\(documentURL.path, privacy: .public) success=\(data != nil)"
+        )
+        return data
     }
 
     func startAccess(for descriptor: DocumentAccessDescriptor) -> DocumentAccessSession {
-        let fileURL = resolveBookmarkIfPossible(descriptor.fileBookmarkData) ?? descriptor.fileURL
-        let accessRootURL = resolveBookmarkIfPossible(descriptor.directoryBookmarkData)
-            ?? descriptor.accessRootURL
-            ?? descriptor.directoryURL
+        let fileURL = resolveBookmark(descriptor.fileBookmarkData) ?? descriptor.fileURL
+        let supportFolderURL = descriptor.supportAccessEntry.flatMap(resolveDocumentSupportFolderURL)
+            ?? resolveBookmark(descriptor.supportFolderBookmarkData, relativeTo: fileURL)
+            ?? descriptor.supportFolderURL
 
-        let session = DocumentAccessSession(accessRootURL: accessRootURL, fileURL: fileURL)
+        let session = DocumentAccessSession(
+            fileURL: fileURL,
+            supportFolderURL: supportFolderURL
+        )
         session.start()
         logger.notice(
-            "startAccess file=\(fileURL.path, privacy: .public) accessRoot=\(accessRootURL.path, privacy: .public) accessRootGranted=\(session.accessRootGranted) fileGranted=\(session.fileAccessGranted)"
+            "startAccess file=\(fileURL.path, privacy: .public) supportFolder=\(supportFolderURL?.path ?? "<none>", privacy: .public) supportGranted=\(session.supportFolderAccessGranted) fileGranted=\(session.fileAccessGranted)"
         )
         return session
     }
 
-    func isAuthorizedRootSelection(_ selectedRootURL: URL, validFor fileURL: URL) -> Bool {
-        let preferredRootURL = inferredAuthorizationRoot(for: fileURL.standardizedFileURL)
-        return contains(preferredRootURL, within: selectedRootURL.standardizedFileURL)
+    private func resolveAuthorizedFolderURL(_ entry: AuthorizedFolderEntry) -> URL? {
+        resolveBookmark(entry.bookmarkData)
+            ?? URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
     }
 
-    func documentContainsRelativeImages(at fileURL: URL) -> Bool {
-        guard let markdown = try? String(contentsOf: fileURL, encoding: .utf8) else {
-            return false
+    private func resolveDocumentURL(for entry: DocumentSupportAccessEntry) -> URL? {
+        resolveBookmark(entry.documentBookmarkData)
+            ?? URL(fileURLWithPath: entry.documentPath).standardizedFileURL
+    }
+
+    private func commonAncestor(for urls: [URL]) -> URL? {
+        guard let firstURL = urls.first?.standardizedFileURL else {
+            return nil
         }
 
-        let patterns = [
-            #"!\[[^\]]*\]\(([^)]+)\)"#,
-            #"<img[^>]+src=["']([^"']+)["']"#
-        ]
+        var ancestorComponents = firstURL.deletingLastPathComponent().pathComponents
 
-        for pattern in patterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+        for url in urls.dropFirst() {
+            let pathComponents = url.standardizedFileURL.deletingLastPathComponent().pathComponents
+            var matchedComponents: [String] = []
+
+            for (left, right) in zip(ancestorComponents, pathComponents) {
+                guard left == right else {
+                    break
+                }
+
+                matchedComponents.append(left)
+            }
+
+            ancestorComponents = matchedComponents
+            if ancestorComponents.isEmpty {
+                return nil
+            }
+        }
+
+        let ancestorPath = NSString.path(withComponents: ancestorComponents)
+        guard ancestorPath.isEmpty == false else {
+            return nil
+        }
+
+        return URL(fileURLWithPath: ancestorPath, isDirectory: true).standardizedFileURL
+    }
+
+    private func uniqueDocumentSupportAccessEntries(
+        _ entries: [DocumentSupportAccessEntry]
+    ) -> [DocumentSupportAccessEntry] {
+        var seenDocumentPaths = Set<String>()
+        var uniqueEntries: [DocumentSupportAccessEntry] = []
+
+        for entry in entries {
+            guard seenDocumentPaths.insert(entry.documentPath).inserted else {
                 continue
             }
 
-            let range = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
-            for match in regex.matches(in: markdown, range: range) {
-                guard match.numberOfRanges >= 2,
-                      let captureRange = Range(match.range(at: 1), in: markdown)
-                else {
-                    continue
-                }
-
-                let captured = markdown[captureRange]
-                    .split(separator: " ", maxSplits: 1)
-                    .first
-                    .map(String.init)?
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "<>")) ?? ""
-
-                if isRelativePath(captured) {
-                    return true
-                }
-            }
+            uniqueEntries.append(entry)
         }
 
-        return false
-    }
-
-    private func resolve(
-        path: String,
-        fileBookmarkData: Data?,
-        directoryBookmarkData: Data?,
-        accessRootPath: String?,
-        authorizedFolders: [AuthorizedFolderEntry]
-    ) -> DocumentAccessDescriptor {
-        let fileURL = resolveBookmarkIfPossible(fileBookmarkData) ?? URL(fileURLWithPath: path)
-        let directoryURL = fileURL.deletingLastPathComponent()
-        let accessRootEntry = authorizedFolder(containing: fileURL, authorizedFolders: authorizedFolders)
-        let accessRootURL = resolveAuthorizedFolderURL(accessRootEntry)
-            ?? resolveBookmarkIfPossible(directoryBookmarkData)
-            ?? accessRootPath.map { URL(fileURLWithPath: $0, isDirectory: true).standardizedFileURL }
-
-        return DocumentAccessDescriptor(
-            fileURL: fileURL,
-            directoryURL: directoryURL,
-            fileBookmarkData: fileBookmarkData,
-            accessRootURL: accessRootURL,
-            directoryBookmarkData: accessRootEntry?.bookmarkData ?? directoryBookmarkData
-        )
-    }
-
-    private func resolveBookmarkIfPossible(_ bookmarkData: Data?) -> URL? {
-        guard let bookmarkData else {
-            return nil
-        }
-
-        return resolveBookmark(bookmarkData)
-    }
-
-    private func resolveAuthorizedFolderURL(_ entry: AuthorizedFolderEntry?) -> URL? {
-        guard let entry else {
-            return nil
-        }
-
-        return resolveBookmarkIfPossible(entry.bookmarkData)
-            ?? URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
+        return uniqueEntries
     }
 
     private func contains(_ descendantURL: URL, within ancestorURL: URL) -> Bool {
         let descendantComponents = descendantURL.standardizedFileURL.pathComponents
         let ancestorComponents = ancestorURL.standardizedFileURL.pathComponents
         return descendantComponents.starts(with: ancestorComponents)
-    }
-
-    private func isRelativePath(_ value: String) -> Bool {
-        guard value.isEmpty == false,
-              value.hasPrefix("/") == false,
-              value.hasPrefix("#") == false
-        else {
-            return false
-        }
-
-        if let url = URL(string: value), url.scheme != nil {
-            return false
-        }
-
-        return true
     }
 }
 
@@ -250,24 +335,26 @@ extension UTType {
 }
 
 final class DocumentAccessSession {
-    let accessRootURL: URL
     let fileURL: URL
+    let supportFolderURL: URL?
     private var activeURLs: [URL] = []
-    private(set) var accessRootGranted = false
+    private(set) var supportFolderAccessGranted = false
     private(set) var fileAccessGranted = false
 
-    init(accessRootURL: URL, fileURL: URL) {
-        self.accessRootURL = accessRootURL
+    init(fileURL: URL, supportFolderURL: URL?) {
         self.fileURL = fileURL
+        self.supportFolderURL = supportFolderURL
     }
 
     func start() {
-        if accessRootURL.startAccessingSecurityScopedResource() {
-            accessRootGranted = true
-            activeURLs.append(accessRootURL)
+        if let supportFolderURL,
+           supportFolderURL.startAccessingSecurityScopedResource() {
+            supportFolderAccessGranted = true
+            activeURLs.append(supportFolderURL)
         }
 
-        if fileURL != accessRootURL, fileURL.startAccessingSecurityScopedResource() {
+        if activeURLs.contains(fileURL) == false,
+           fileURL.startAccessingSecurityScopedResource() {
             fileAccessGranted = true
             activeURLs.append(fileURL)
         }
