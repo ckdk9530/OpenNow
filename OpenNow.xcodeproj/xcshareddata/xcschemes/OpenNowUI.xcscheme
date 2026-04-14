@@ -45,17 +45,6 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DCDF61B92F8CA48500653A73"
-               BuildableName = "OpenNowTests.xctest"
-               BlueprintName = "OpenNowTests"
-               ReferencedContainer = "container:OpenNow.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "YES"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "DCDF61C32F8CA48500653A73"
                BuildableName = "OpenNowUITests.xctest"
                BlueprintName = "OpenNowUITests"

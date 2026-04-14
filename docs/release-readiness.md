@@ -7,6 +7,8 @@
 - App category is `public.app-category.productivity`.
 - Launch now restores the last document again when restore is allowed.
 - UI tests no longer trigger folder-tree authorization prompts from launch-environment fixtures.
+- Default `OpenNow` scheme is now repo-health focused: build plus unit tests.
+- UI layout and launch automation remain in the shared `OpenNowUI` scheme and require local macOS Accessibility / Automation availability.
 
 ## Remaining Manual App Store Connect Blockers
 - Banking information must be added for the paid apps agreement.
@@ -22,3 +24,4 @@
 - The app is a read-only Markdown reader; support purchases must stay optional and must not imply feature unlocks.
 - Sandbox behavior is the real shipping path. Do not sign off launch quality based only on non-sandbox local runs.
 - Before submission, run build, test, and a Release archive using the distribution signing path rather than a development archive.
+- Before relying on `OpenNowUI`, confirm `System Events` UI scripting is enabled and the machine has granted the required Automation / Accessibility permissions to the test tooling.

@@ -40,3 +40,5 @@
 ## Verification
 - `xcodebuild -project OpenNow.xcodeproj -scheme OpenNow -destination 'platform=macOS' build`
 - `xcodebuild -project OpenNow.xcodeproj -scheme OpenNow -destination 'platform=macOS' test`
+- `xcodebuild -project OpenNow.xcodeproj -scheme OpenNowUI -destination 'platform=macOS' test`
+- `OpenNowUI` requires macOS UI automation to be available. If `System Events` UI scripting is disabled or the machine has not granted the needed Accessibility / Automation permissions, treat that as an environment failure, not proof that the app UI is broken.
