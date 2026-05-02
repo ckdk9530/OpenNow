@@ -8,6 +8,9 @@ enum RuntimeEnvironment {
     nonisolated private static var testFileKey: String { "OPENNOW_TEST_FILE" }
     nonisolated private static var testMarkdownKey: String { "OPENNOW_TEST_MARKDOWN" }
     nonisolated private static var testFilenameKey: String { "OPENNOW_TEST_FILENAME" }
+    nonisolated private static var suppressOnboardingKey: String { "OPENNOW_SUPPRESS_ONBOARDING" }
+    nonisolated private static var openSettingsOnLaunchKey: String { "OPENNOW_OPEN_SETTINGS_ON_LAUNCH" }
+    nonisolated private static var forceDarkAppearanceKey: String { "OPENNOW_FORCE_DARK_APPEARANCE" }
     nonisolated private static var xcInjectBundleKey: String { "XCInjectBundle" }
     nonisolated private static var xcInjectBundleIntoKey: String { "XCInjectBundleInto" }
     nonisolated private static var dyldInsertLibrariesKey: String { "DYLD_INSERT_LIBRARIES" }
@@ -29,10 +32,12 @@ enum RuntimeEnvironment {
         testFileKey,
         testMarkdownKey,
         testFilenameKey,
+        forceDarkAppearanceKey,
         xcInjectBundleKey,
         xcInjectBundleIntoKey,
         dyldInsertLibrariesKey,
-        osActivityModeKey
+        osActivityModeKey,
+        openSettingsOnLaunchKey
     ]
 
     nonisolated static var launchDiagnosticsURL: URL {
@@ -115,6 +120,26 @@ enum RuntimeEnvironment {
         return launchTestFileURL(environment)
     }
 
+    nonisolated static func suppressesOnboarding(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+        isRunningUnderXCTest(environment) || environment[suppressOnboardingKey] == "1"
+    }
+
+    nonisolated static func opensSettingsOnLaunch(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+#if DEBUG
+        environment[openSettingsOnLaunchKey] == "1"
+#else
+        false
+#endif
+    }
+
+    nonisolated static func forcesDarkAppearance(_ environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+#if DEBUG
+        environment[forceDarkAppearanceKey] == "1"
+#else
+        false
+#endif
+    }
+
     nonisolated static func makeLaunchDiagnostics(
         _ environment: [String: String] = ProcessInfo.processInfo.environment,
         date: Date = Date(),
@@ -175,6 +200,7 @@ final class PreferencesStore {
         static let recentFiles = "recentFiles"
         static let documentSupportAccess = "documentSupportAccess"
         static let authorizedFolders = "authorizedFolders"
+        static let defaultViewerOnboardingCompleted = "defaultViewerOnboardingCompleted"
         static let windowFrame = "windowFrame"
         static let sceneWindowFrame = "NSWindow Frame main"
         static let readerFontScale = "readerFontScale"
@@ -300,6 +326,14 @@ final class PreferencesStore {
 
     func saveReaderFontScale(_ scale: Double) {
         defaults.set(scale, forKey: Key.readerFontScale)
+    }
+
+    func hasCompletedDefaultViewerOnboarding() -> Bool {
+        defaults.bool(forKey: Key.defaultViewerOnboardingCompleted)
+    }
+
+    func markDefaultViewerOnboardingCompleted() {
+        defaults.set(true, forKey: Key.defaultViewerOnboardingCompleted)
     }
 
     private func persist<T: Encodable>(_ value: T, forKey key: String) {

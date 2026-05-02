@@ -8,6 +8,8 @@ final class ReaderWebBridge: NSObject {
     private var pendingScrollFraction: Double?
     private var lastRenderedSignature: String?
     private var lastRenderedDocumentURL: URL?
+    private var lastRenderedHTML: String?
+    private var lastRenderedBaseURL: URL?
     private var attachedWebViewID: ObjectIdentifier?
     private var fontScale: Double = 1.0
     private var colorScheme: String = "light"
@@ -17,6 +19,8 @@ final class ReaderWebBridge: NSObject {
         if attachedWebViewID != webViewID {
             lastRenderedSignature = nil
             lastRenderedDocumentURL = nil
+            lastRenderedHTML = nil
+            lastRenderedBaseURL = nil
             pendingScrollFraction = nil
             attachedWebViewID = webViewID
         }
@@ -56,6 +60,8 @@ final class ReaderWebBridge: NSObject {
 
             lastRenderedSignature = signature
             lastRenderedDocumentURL = documentURL
+            lastRenderedHTML = html
+            lastRenderedBaseURL = baseURL
             webView.loadHTMLString(html, baseURL: baseURL)
         }
     }
@@ -77,7 +83,12 @@ final class ReaderWebBridge: NSObject {
             }
 
             pendingScrollFraction = await captureScrollFraction()
-            webView.reload()
+            if let lastRenderedHTML,
+               let lastRenderedBaseURL {
+                webView.loadHTMLString(lastRenderedHTML, baseURL: lastRenderedBaseURL)
+            } else {
+                webView.reload()
+            }
         }
     }
 

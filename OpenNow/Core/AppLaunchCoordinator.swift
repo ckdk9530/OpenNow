@@ -46,7 +46,9 @@ final class AppLaunchCoordinator {
     private var currentAccessSession: DocumentAccessSession?
     private var currentFileModificationDate: Date?
     private var loadTask: Task<Void, Never>?
+    private var startupMaintenanceTask: Task<Void, Never>?
     private var hasStarted = false
+    private let startupMaintenanceDelay: Duration
 
     init(
         preferencesStore: PreferencesStore,
@@ -56,7 +58,8 @@ final class AppLaunchCoordinator {
         panelPresenter: any DocumentPanelPresenting,
         alertPresenter: any DocumentAlertPresenting,
         windowChromeController: any WindowChromeControlling,
-        allowsSupportingFilesAccessRecovery: Bool = RuntimeEnvironment.isRunningUnderXCTest() == false
+        allowsSupportingFilesAccessRecovery: Bool = RuntimeEnvironment.isRunningUnderXCTest() == false,
+        startupMaintenanceDelay: Duration = .seconds(2)
     ) {
         self.preferencesStore = preferencesStore
         self.documentAccessController = documentAccessController
@@ -66,6 +69,7 @@ final class AppLaunchCoordinator {
         self.alertPresenter = alertPresenter
         self.windowChromeController = windowChromeController
         self.allowsSupportingFilesAccessRecovery = allowsSupportingFilesAccessRecovery
+        self.startupMaintenanceDelay = startupMaintenanceDelay
         self.recentFiles = []
         self.readerFontScale = 1.0
         self.documentSupportAccessEntries = []
@@ -121,11 +125,10 @@ final class AppLaunchCoordinator {
         readerFontScale = preferencesStore.loadReaderFontScale()
         webBridge.setFontScale(readerFontScale)
 
-        supportingFilesAccessCoordinator.loadPersistedEntries()
-        supportingFilesAccessCoordinator.migrateLegacyAuthorizedFoldersIfNeeded(recentFiles: recentFiles)
-        documentSupportAccessEntries = supportingFilesAccessCoordinator.entries
+        reloadDocumentSupportAccessEntries()
 
         windowChromeController.apply(document: activeDocument)
+        scheduleDeferredStartupMaintenance()
 
         if let testFileURL = RuntimeEnvironment.launchTestDocumentURL() {
             open(
@@ -157,8 +160,7 @@ final class AppLaunchCoordinator {
 
     func openRecent(_ entry: RecentFileEntry) {
         recentFiles = preferencesStore.loadRecentFiles()
-        supportingFilesAccessCoordinator.loadPersistedEntries()
-        documentSupportAccessEntries = supportingFilesAccessCoordinator.entries
+        reloadDocumentSupportAccessEntries(migratingLegacyAuthorizedFoldersIfNeeded: true)
 
         let resolvedEntry = recentFiles.first(where: { $0.path == entry.path }) ?? entry
 
@@ -245,6 +247,34 @@ final class AppLaunchCoordinator {
             for: activeDocument,
             failingAssetURL: assetURL
         )
+    }
+
+    private func scheduleDeferredStartupMaintenance() {
+        startupMaintenanceTask?.cancel()
+        startupMaintenanceTask = Task { [weak self, startupMaintenanceDelay] in
+            try? await Task.sleep(for: startupMaintenanceDelay)
+            guard Task.isCancelled == false else {
+                return
+            }
+
+            self?.runDeferredStartupMaintenance()
+        }
+    }
+
+    private func runDeferredStartupMaintenance() {
+        startupMaintenanceTask = nil
+        recentFiles = preferencesStore.loadRecentFiles()
+        reloadDocumentSupportAccessEntries(migratingLegacyAuthorizedFoldersIfNeeded: true)
+    }
+
+    private func reloadDocumentSupportAccessEntries(
+        migratingLegacyAuthorizedFoldersIfNeeded: Bool = false
+    ) {
+        supportingFilesAccessCoordinator.loadPersistedEntries()
+        if migratingLegacyAuthorizedFoldersIfNeeded {
+            supportingFilesAccessCoordinator.migrateLegacyAuthorizedFoldersIfNeeded(recentFiles: recentFiles)
+        }
+        documentSupportAccessEntries = supportingFilesAccessCoordinator.entries
     }
 
     private func open(

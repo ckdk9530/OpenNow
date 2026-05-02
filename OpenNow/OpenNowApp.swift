@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct OpenNowApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    private let preferencesStore: PreferencesStore
     @State private var coordinator: AppLaunchCoordinator
     @State private var windowChromeController: DefaultWindowChromeController
 
     init() {
         let preferencesStore = PreferencesStore()
+        self.preferencesStore = preferencesStore
         let windowChromeController = DefaultWindowChromeController(preferencesStore: preferencesStore)
         let coordinator = AppLaunchCoordinator(
             preferencesStore: preferencesStore,
@@ -27,6 +29,7 @@ struct OpenNowApp: App {
         Window("OpenNow", id: "main") {
             ContentView(
                 coordinator: coordinator,
+                preferencesStore: preferencesStore,
                 windowChromeController: windowChromeController
             )
                 .task {

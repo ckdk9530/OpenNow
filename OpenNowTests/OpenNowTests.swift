@@ -213,6 +213,17 @@ struct OpenNowTests {
         #expect(defaults.string(forKey: unrelatedSplitViewKey) == "keep")
     }
 
+    @Test func preferencesStoreTracksDefaultViewerOnboardingCompletion() {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let store = PreferencesStore(defaults: defaults)
+
+        #expect(store.hasCompletedDefaultViewerOnboarding() == false)
+
+        store.markDefaultViewerOnboardingCompleted()
+
+        #expect(store.hasCompletedDefaultViewerOnboarding())
+    }
+
     @Test func inferredAuthorizationRootUsesTopLevelHomeFolder() {
         let controller = DocumentAccessController()
         let rootURL = controller.inferredAuthorizationRoot(
@@ -366,6 +377,49 @@ struct OpenNowTests {
         #expect(preferencesStore.loadDocumentSupportAccess().count == 1)
         #expect(preferencesStore.loadDocumentSupportAccess().first?.supportFolderPath == expectedSupportFolderURL.path)
         coordinator.closeCurrentFile()
+    }
+
+    @Test @MainActor func coordinatorDefersLegacyAuthorizedFolderMigrationUntilStartupMaintenance() async {
+        let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
+        let preferencesStore = PreferencesStore(defaults: defaults)
+        let recentFile = RecentFileEntry(
+            path: "/Users/example/Project/docs/readme.md",
+            displayName: "readme.md",
+            fileBookmarkData: nil,
+            lastOpenedAt: .distantPast
+        )
+        let authorizedFolder = AuthorizedFolderEntry(
+            path: "/Users/example/Project",
+            displayName: "Project",
+            bookmarkData: nil,
+            lastUsedAt: .distantPast
+        )
+        let coordinator = AppLaunchCoordinator(
+            preferencesStore: preferencesStore,
+            documentAccessController: DocumentAccessController(),
+            markdownRenderer: MarkdownRenderer(),
+            fileWatcher: FileWatcher(),
+            panelPresenter: MockDocumentPanelPresenter(),
+            alertPresenter: MockDocumentAlertPresenter(),
+            windowChromeController: MockWindowChromeController(),
+            startupMaintenanceDelay: .milliseconds(10)
+        )
+
+        preferencesStore.saveRecentFile(recentFile)
+        preferencesStore.saveAuthorizedFolder(authorizedFolder)
+
+        coordinator.start()
+
+        #expect(preferencesStore.loadDocumentSupportAccess().isEmpty)
+        #expect(preferencesStore.loadAuthorizedFolders() == [authorizedFolder])
+
+        await waitUntil {
+            preferencesStore.loadDocumentSupportAccess().count == 1
+        }
+
+        #expect(preferencesStore.loadDocumentSupportAccess().first?.documentPath == recentFile.path)
+        #expect(preferencesStore.loadDocumentSupportAccess().first?.supportFolderPath == authorizedFolder.path)
+        #expect(preferencesStore.loadAuthorizedFolders().isEmpty)
     }
 
     @Test @MainActor func coordinatorOffersOpenPanelAfterRecentOpenFailure() async throws {
