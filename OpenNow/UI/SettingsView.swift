@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var markdownDefaultsController = MarkdownDefaultAppController()
-    @State private var donationStore = DonationStore()
 
     var body: some View {
         Form {
@@ -25,35 +24,18 @@ struct SettingsView: View {
             } footer: {
                 Text(defaultsDescription)
             }
-
-            Section {
-                ForEach(donationStore.featuredTiers) { tier in
-                    DonationTierRow(
-                        tier: tier,
-                        priceLabel: donationStore.displayPrice(for: tier),
-                        isBusy: donationStore.isPurchasing(tier)
-                    ) {
-                        Task {
-                            await donationStore.purchase(tier)
-                        }
-                    }
-                }
-            } footer: {
-                Text("Optional one-time support purchases through the App Store. OpenNow stays fully usable without purchase.")
-            }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 540, minHeight: 360)
+        .frame(minWidth: 540, minHeight: 240)
         .task {
             markdownDefaultsController.refreshStatus()
-            await donationStore.loadProductsIfNeeded()
         }
-        .alert(activeBannerTitle, isPresented: bannerIsPresented) {
+        .alert(markdownDefaultsController.banner?.title ?? "", isPresented: bannerIsPresented) {
             Button("OK") {
-                clearBanners()
+                markdownDefaultsController.clearBanner()
             }
         } message: {
-            Text(activeBannerMessage)
+            Text(markdownDefaultsController.banner?.message ?? "")
         }
     }
 
@@ -95,26 +77,13 @@ struct SettingsView: View {
 
     private var bannerIsPresented: Binding<Bool> {
         Binding(
-            get: { donationStore.banner != nil || markdownDefaultsController.banner != nil },
+            get: { markdownDefaultsController.banner != nil },
             set: { isPresented in
                 if isPresented == false {
-                    clearBanners()
+                    markdownDefaultsController.clearBanner()
                 }
             }
         )
-    }
-
-    private var activeBannerTitle: String {
-        markdownDefaultsController.banner?.title ?? donationStore.banner?.title ?? ""
-    }
-
-    private var activeBannerMessage: String {
-        markdownDefaultsController.banner?.message ?? donationStore.banner?.message ?? ""
-    }
-
-    private func clearBanners() {
-        markdownDefaultsController.clearBanner()
-        donationStore.clearBanner()
     }
 }
 
@@ -156,42 +125,6 @@ private struct DefaultViewerRow: View {
                 .buttonStyle(.bordered)
                 .disabled(isBusy)
             }
-        }
-        .padding(.vertical, 2)
-    }
-}
-
-private struct DonationTierRow: View {
-    let tier: DonationStore.DonationTier
-    let priceLabel: String
-    let isBusy: Bool
-    let action: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(tier.title)
-                    .font(.body.weight(.medium))
-
-                Text(tier.caption)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 16)
-
-            Text(priceLabel)
-                .font(.body.weight(.medium).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 54, alignment: .trailing)
-
-            Button(isBusy ? "Processing…" : "Buy") {
-                action()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .disabled(isBusy)
         }
         .padding(.vertical, 2)
     }
