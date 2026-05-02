@@ -29,6 +29,7 @@ final class AppLaunchCoordinator {
     private let panelPresenter: any DocumentPanelPresenting
     private let alertPresenter: any DocumentAlertPresenting
     private let windowChromeController: any WindowChromeControlling
+    private let allowsSupportingFilesAccessRecovery: Bool
     private let supportingFilesAccessCoordinator: SupportingFilesAccessCoordinator
     private let logger = Logger(subsystem: "com.dahengchen.OpenNow", category: "Launch")
 
@@ -54,7 +55,8 @@ final class AppLaunchCoordinator {
         fileWatcher: FileWatcher,
         panelPresenter: any DocumentPanelPresenting,
         alertPresenter: any DocumentAlertPresenting,
-        windowChromeController: any WindowChromeControlling
+        windowChromeController: any WindowChromeControlling,
+        allowsSupportingFilesAccessRecovery: Bool = RuntimeEnvironment.isRunningUnderXCTest() == false
     ) {
         self.preferencesStore = preferencesStore
         self.documentAccessController = documentAccessController
@@ -63,6 +65,7 @@ final class AppLaunchCoordinator {
         self.panelPresenter = panelPresenter
         self.alertPresenter = alertPresenter
         self.windowChromeController = windowChromeController
+        self.allowsSupportingFilesAccessRecovery = allowsSupportingFilesAccessRecovery
         self.recentFiles = []
         self.readerFontScale = 1.0
         self.documentSupportAccessEntries = []
@@ -234,7 +237,7 @@ final class AppLaunchCoordinator {
     }
 
     private func requestSupportingFilesAccess(for assetURL: URL) -> URL? {
-        guard RuntimeEnvironment.isRunningUnderXCTest() == false else {
+        guard allowsSupportingFilesAccessRecovery else {
             return nil
         }
 
@@ -279,8 +282,12 @@ final class AppLaunchCoordinator {
             }
 
             do {
-                let loadedDocument = try await self.loadDocument(using: descriptor)
+                var loadedDocument = try await self.loadDocument(using: descriptor)
                 try Task.checkCancellation()
+                loadedDocument = self.resolveInitialSupportingFilesAccessIfNeeded(
+                    for: loadedDocument,
+                    accessSession: accessSession
+                )
 
                 self.activeDocument = loadedDocument
                 self.currentFileModificationDate = loadedDocument.lastKnownModificationDate
@@ -330,6 +337,36 @@ final class AppLaunchCoordinator {
                     self.openDocumentFromPanel()
                 }
             }
+        }
+    }
+
+    private func resolveInitialSupportingFilesAccessIfNeeded(
+        for document: OpenedDocument,
+        accessSession: DocumentAccessSession
+    ) -> OpenedDocument {
+        guard allowsSupportingFilesAccessRecovery,
+              document.relativeLocalAssetURLs.isEmpty == false,
+              accessSession.supportFolderAccessGranted == false
+        else {
+            return document
+        }
+
+        switch supportingFilesAccessCoordinator.requestInitialSupportAccess(for: document) {
+        case .granted(let supportFolderURL):
+            ReaderAssetSecurityScopeStore.shared.replaceAuthorizedDirectories([supportFolderURL])
+            return document.updatingSupportAccess(state: .ready, unresolvedLocalAssetURLs: [])
+        case .suppressed(let unresolvedAssetURLs):
+            return document.updatingSupportAccess(
+                state: .suppressed,
+                unresolvedLocalAssetURLs: unresolvedAssetURLs
+            )
+        case .unavailable(let unresolvedAssetURLs):
+            return document.updatingSupportAccess(
+                state: .unavailable,
+                unresolvedLocalAssetURLs: unresolvedAssetURLs
+            )
+        case .notNeeded:
+            return document
         }
     }
 

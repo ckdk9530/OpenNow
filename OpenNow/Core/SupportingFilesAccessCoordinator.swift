@@ -76,6 +76,41 @@ final class SupportingFilesAccessCoordinator {
             return nil
         }
 
+        let result = requestSupportAccess(
+            for: document,
+            unresolvedAssetURLs: unresolvedAssetURLs(
+                for: document,
+                failingAssetURL: failingAssetURL
+            ),
+            reloadAfterRecovery: true
+        )
+
+        guard case .granted(let folderURL) = result else {
+            return nil
+        }
+
+        return folderURL
+    }
+
+    func requestInitialSupportAccess(for document: OpenedDocument) -> SupportingFilesAccessResult {
+        requestSupportAccess(
+            for: document,
+            unresolvedAssetURLs: unresolvedAssetURLs(for: document, failingAssetURL: nil),
+            suggestedDirectory: documentAccessController.inferredAuthorizationRoot(for: document.url),
+            reloadAfterRecovery: false
+        )
+    }
+
+    private func requestSupportAccess(
+        for document: OpenedDocument,
+        unresolvedAssetURLs: [URL],
+        suggestedDirectory: URL? = nil,
+        reloadAfterRecovery: Bool
+    ) -> SupportingFilesAccessResult {
+        guard unresolvedAssetURLs.isEmpty == false else {
+            return .notNeeded
+        }
+
         let documentURL = document.url.standardizedFileURL
         let documentPath = documentURL.path
 
@@ -83,14 +118,10 @@ final class SupportingFilesAccessCoordinator {
               unavailableDocumentPaths.contains(documentPath) == false,
               recoveringDocumentPaths.contains(documentPath) == false
         else {
-            return nil
+            return .notNeeded
         }
 
-        let unresolvedAssetURLs = unresolvedAssetURLs(
-            for: document,
-            failingAssetURL: failingAssetURL
-        )
-        let suggestedDirectory = documentAccessController.preferredSupportFolder(
+        let suggestedDirectory = suggestedDirectory ?? documentAccessController.preferredSupportFolder(
             for: unresolvedAssetURLs,
             documentDirectoryURL: document.directoryURL
         )
@@ -118,8 +149,10 @@ final class SupportingFilesAccessCoordinator {
                     suppressedDocumentPaths.remove(documentPath)
                     unavailableDocumentPaths.remove(documentPath)
                     documentStateDidChange?(documentPath, .ready, [])
-                    accessDidRecover?(documentPath)
-                    return documentAccessController.resolveDocumentSupportFolderURL(entry) ?? selectedFolderURL
+                    if reloadAfterRecovery {
+                        accessDidRecover?(documentPath)
+                    }
+                    return .granted(documentAccessController.resolveDocumentSupportFolderURL(entry) ?? selectedFolderURL)
                 }
 
                 guard alertPresenter.retrySupportingFilesSelection(
@@ -129,30 +162,31 @@ final class SupportingFilesAccessCoordinator {
                 ) else {
                     unavailableDocumentPaths.insert(documentPath)
                     documentStateDidChange?(documentPath, .unavailable, unresolvedAssetURLs)
-                    return nil
+                    return .unavailable(unresolvedAssetURLs)
                 }
             case .continueWithoutImages:
                 suppressedDocumentPaths.insert(documentPath)
                 documentStateDidChange?(documentPath, .suppressed, unresolvedAssetURLs)
-                return nil
+                return .suppressed(unresolvedAssetURLs)
             case .unavailable:
                 unavailableDocumentPaths.insert(documentPath)
                 documentStateDidChange?(documentPath, .unavailable, unresolvedAssetURLs)
-                return nil
+                return .unavailable(unresolvedAssetURLs)
             }
         }
     }
 
     private func unresolvedAssetURLs(
         for document: OpenedDocument,
-        failingAssetURL: URL
+        failingAssetURL: URL?
     ) -> [URL] {
         var unresolved = document.relativeLocalAssetURLs
         if unresolved.isEmpty {
             unresolved = document.unresolvedLocalAssetURLs
         }
 
-        if unresolved.contains(failingAssetURL.standardizedFileURL) == false {
+        if let failingAssetURL,
+           unresolved.contains(failingAssetURL.standardizedFileURL) == false {
             unresolved.append(failingAssetURL.standardizedFileURL)
         }
 
@@ -172,4 +206,11 @@ final class SupportingFilesAccessCoordinator {
         preferencesStore.saveDocumentSupportAccess(entry)
         entriesDidChange?(entries)
     }
+}
+
+enum SupportingFilesAccessResult: Equatable {
+    case granted(URL)
+    case suppressed([URL])
+    case unavailable([URL])
+    case notNeeded
 }

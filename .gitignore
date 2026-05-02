@@ -11,5 +11,6 @@ build/
 # Local audit and scratch artifacts
 .codex-hygiene/
 tmp/
+output-*
 docs/render-fixtures/*.png
 docs/render-fixtures/*.log

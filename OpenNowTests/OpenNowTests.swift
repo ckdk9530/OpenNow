@@ -72,6 +72,17 @@ struct OpenNowTests {
         #expect(rendered.html.contains(#"src="opennow-file:///tmp/project/fixtures/My%20Diagram.svg""#))
     }
 
+    @Test func rendererCollectsBracketedRelativeImagePathsWithSpaces() throws {
+        let renderer = MarkdownRenderer()
+        let rendered = try renderer.render(
+            markdown: "![Preview](<./fixtures/My Diagram.png>)",
+            baseURL: URL(fileURLWithPath: "/tmp/project", isDirectory: true)
+        )
+
+        #expect(rendered.html.contains(#"src="opennow-file:///tmp/project/fixtures/My%20Diagram.png""#))
+        #expect(rendered.relativeLocalAssetURLs == [URL(fileURLWithPath: "/tmp/project/fixtures/My Diagram.png")])
+    }
+
     @Test func rendererRewritesImagesInsideGeneratedTables() throws {
         let renderer = MarkdownRenderer()
         let rendered = try renderer.render(
@@ -316,7 +327,7 @@ struct OpenNowTests {
         #expect(alertPresenter.recoveryCallCount == 1)
     }
 
-    @Test @MainActor func coordinatorOpensRelativeAssetMarkdownWithoutPromptingForSupportingFilesAccess() async throws {
+    @Test @MainActor func coordinatorRequestsSupportingFilesAccessWhenRelativeAssetMarkdownOpens() async throws {
         let defaults = UserDefaults(suiteName: "OpenNowTests-\(UUID().uuidString)")!
         let preferencesStore = PreferencesStore(defaults: defaults)
         let documentAccessController = DocumentAccessController()
@@ -330,7 +341,8 @@ struct OpenNowTests {
             fileWatcher: FileWatcher(),
             panelPresenter: panelPresenter,
             alertPresenter: alertPresenter,
-            windowChromeController: windowChromeController
+            windowChromeController: windowChromeController,
+            allowsSupportingFilesAccessRecovery: true
         )
         let markdownURL = try makeMarkdownFixture(
             named: "RelativeAssets.md",
@@ -340,6 +352,8 @@ struct OpenNowTests {
             ![Diagram](./diagram.png)
             """
         )
+        let expectedSupportFolderURL = documentAccessController.inferredAuthorizationRoot(for: markdownURL)
+        alertPresenter.recoveryChoices = [.selectedFolder(expectedSupportFolderURL)]
 
         coordinator.start()
         coordinator.openDocument(at: markdownURL)
@@ -347,7 +361,10 @@ struct OpenNowTests {
             coordinator.activeDocument?.url == markdownURL
         }
 
-        #expect(alertPresenter.recoveryCallCount == 0)
+        #expect(alertPresenter.recoveryCallCount == 1)
+        #expect(coordinator.activeDocument?.supportAccessState == .ready)
+        #expect(preferencesStore.loadDocumentSupportAccess().count == 1)
+        #expect(preferencesStore.loadDocumentSupportAccess().first?.supportFolderPath == expectedSupportFolderURL.path)
         coordinator.closeCurrentFile()
     }
 

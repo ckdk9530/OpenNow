@@ -354,11 +354,7 @@ struct MarkdownRenderer: Sendable {
                     continue
                 }
 
-                let captured = markdown[captureRange]
-                    .split(separator: " ", maxSplits: 1)
-                    .first
-                    .map(String.init)?
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "<>")) ?? ""
+                let captured = markdownImageDestination(from: String(markdown[captureRange]))
 
                 guard isRelativePath(captured) else {
                     continue
@@ -373,6 +369,21 @@ struct MarkdownRenderer: Sendable {
         }
 
         return urls
+    }
+
+    nonisolated private func markdownImageDestination(from rawValue: String) -> String {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.hasPrefix("<"),
+           let closingIndex = trimmed.firstIndex(of: ">") {
+            let destinationStart = trimmed.index(after: trimmed.startIndex)
+            return String(trimmed[destinationStart..<closingIndex])
+        }
+
+        return trimmed
+            .split(separator: " ", maxSplits: 1)
+            .first
+            .map(String.init) ?? ""
     }
 
     nonisolated private func isRelativePath(_ value: String) -> Bool {
